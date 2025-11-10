@@ -1,0 +1,129 @@
+/* src/app/components/Formulario.module.css */
+
+.formContainer {
+  background-color: #ffffff;
+  max-width: 900px; /* Ajusta el ancho máximo a tu gusto */
+  margin: 2rem auto;
+  padding: 2.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.title {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 2rem;
+}
+
+.subtitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #00008B; /* Azul oscuro */
+  text-decoration: underline;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+  margin-top: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.gridContainer {
+  display: grid;
+  /* 4 columnas en escritorio */
+  grid-template-columns: repeat(4, 1fr); 
+  gap: 1.5rem; /* Espacio entre campos */
+}
+
+.fieldWrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Clases para que un campo ocupe más columnas */
+.colSpan2 {
+  grid-column: span 2;
+}
+.colSpan3 {
+  grid-column: span 3;
+}
+.colSpan4 {
+  grid-column: span 4;
+}
+
+.fieldWrapper label {
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #2d2d2d;
+}
+
+.asterisk {
+  color: #d9534f; /* Rojo para el asterisco */
+}
+
+.inputField,
+.selectField {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #cccccc;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  box-sizing: border-box; /* Importante para que el padding no rompa el layout */
+  background-color: #fdfdfd;
+}
+
+.selectField {
+  background-color: #f9f9f9;
+}
+
+.buttonContainer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2.5rem;
+}
+
+.button {
+  padding: 0.8rem 2.5rem;
+  font-weight: bold;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: opacity 0.2s ease;
+}
+
+.button:hover {
+  opacity: 0.85;
+}
+
+.cancelButton {
+  background-color: #d9534f; /* Rojo suave */
+}
+
+.submitButton {
+  background-color: #90ee90; /* Verde pálido */
+  color: #222; /* Texto oscuro para mejor contraste */
+}
+
+/* --- Responsive para móviles --- */
+@media (max-width: 768px) {
+  .gridContainer {
+    grid-template-columns: 1fr; /* 1 columna en móviles */
+  }
+  
+  /* Hacemos que todos los campos ocupen 1 columna */
+  .colSpan2, .colSpan3, .colSpan4 {
+    grid-column: span 1;
+  }
+
+  .formContainer {
+    padding: 1.5rem;
+  }
+
+  .buttonContainer {
+    flex-direction: column; /* Botones uno encima del otro */
+    gap: 1rem;
+  }
+}
