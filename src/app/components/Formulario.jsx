@@ -2,6 +2,10 @@
 import { useState } from 'react';
 import styles from './Formulario.module.css';
 import { useRouter } from 'next/navigation';
+import ActionModal from './ActionModal';
+import ErrorModal from './ErrorModal';
+import InfoModal from './InfoModal';
+
 
 // 1. Estado inicial VÁLIDO (fuera del componente)
 const initialState = {
@@ -31,6 +35,9 @@ export default function Formulario() {
   const [formData, setFormData] = useState(initialState);
   const [errores, setErrores] = useState({});
   const router = useRouter();
+  const [modalData, setModalData] = useState(null);
+  const [modalError, setModalError] = useState(null);
+  const [infoModalData, setInfoModalData] = useState(null);
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -81,7 +88,17 @@ export default function Formulario() {
         const erroresDelBackend = await respuesta.json();
         setErrores(erroresDelBackend); // Guardamos los errores en el estado
         console.error('Errores de validación:', erroresDelBackend);
-        alert("Por favor, corrige los errores marcados en el formulario.");
+        setModalData({
+          titulo: "Cartel de Advertencia", // Título como en tu imagen
+          // Texto descriptivo: si el back-end mandó un error global (como "CUIT ya existe") lo usamos.
+          // Si no, ponemos un mensaje genérico.
+          descripcion: erroresDelBackend.error || "Se encontraron errores en la carga de datos. Por favor, revise los campos marcados.",
+          cancelText: "Cerrar", // "Acción 1" (Botón Rojo)
+          confirmText: "Aceptar", // "Acción 2" (Botón Verde)
+          // Ambas acciones solo cerrarán el modal para que el usuario pueda corregir los campos.
+          onCancel: () => setModalData(null),
+          onConfirm: () => setModalData(null)
+        });
         return; // Detenemos la ejecución
       }
       // --- Fin de la lógica de error ---
@@ -97,20 +114,36 @@ export default function Formulario() {
     } catch (error) {
       // Esto solo captura errores de RED (ej. servidor caído)
       console.error('Error de red:', error);
+      setModalError(`Error de conexión: ${error.message}. Revisa si el servidor está funcionando.`);
       // Mostramos un error "global"
-      setErrores({ global: `Error de conexión: ${error.message}` });
+      setModalData({
+        titulo: "Cartel de Error",
+        descripcion: `Error de conexión: ${error.message}. Verifique que el servidor esté funcionando.`,
+        cancelText: "Cerrar",
+        confirmText: "Reintentar",
+        onCancel: () => setModalData(null),
+        onConfirm: () => {
+          setModalData(null);
+          handleSubmit(e); // Opcional: el botón verde reintenta el envío
+        }
+      });
     }
   };
 
   const handleCancel = () => {
-    // 1. MENSAJE DE PRUEBA
-    console.log("¡HICISTE CLIC EN CANCELAR!"); 
-    
-    // 2. Resetea el formulario
-    setFormData(initialState); 
-    
-    // 3. Te lleva al dashboard
-    router.push('/dashboard'); 
+    setInfoModalData({
+      titulo: "Confirmar Cancelación",
+      descripcion: "¿Estás seguro de que deseas cancelar? Se perderán todos los datos no guardados.",
+      cancelText: "No, seguir editando", // Acción 1 (Rojo)
+      confirmText: "Sí, cancelar", // Acción 2 (Verde)
+      onCancel: () => setInfoModalData(null), // Cierra el modal
+      onConfirm: () => {
+        // Ejecuta la acción de cancelación real
+        setInfoModalData(null);
+        setFormData(initialState); 
+        router.push('/dashboard'); 
+      }
+    });
   };
   const Label = ({ htmlFor, children, required = false }) => (
     <label htmlFor={htmlFor}>
@@ -418,6 +451,33 @@ export default function Formulario() {
           </button>
         </div>
       </form>
+        {modalData && (
+        <ActionModal
+          titulo={modalData.titulo}
+          descripcion={modalData.descripcion}
+          onConfirm={modalData.onConfirm}
+          onCancel={modalData.onCancel}
+          confirmText={modalData.confirmText}
+          cancelText={modalData.cancelText}
+        />
+      )}
+      {modalError && (
+        <ErrorModal
+          titulo="Cartel de Error"
+          descripcion={modalError}
+          onClose={() => setModalError(null)} // La función para cerrarlo
+        />
+      )}
+      {infoModalData && (
+        <InfoModal
+          titulo={infoModalData.titulo}
+          descripcion={infoModalData.descripcion}
+          onConfirm={infoModalData.onConfirm}
+          onCancel={infoModalData.onCancel}
+          confirmText={infoModalData.confirmText}
+          cancelText={infoModalData.cancelText}
+        />
+      )}
     </div>
   );
 }
