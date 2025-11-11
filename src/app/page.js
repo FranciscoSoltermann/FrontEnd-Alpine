@@ -1,14 +1,15 @@
 // src/app/page.js
 
-// 1. Importa tu componente de Formulario
-import Formulario from '@/app/components/Formulario.jsx';
+import Formulario from './components/Formulario.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx'; // 1. IMPORTA EL GUARDIA
 
 export default function AltaHuespedPage() {
   return (
-    // 2. Aplicamos el fondo verde pálido aquí
-    <main style={{ backgroundColor: '#e6f5e6', minHeight: 'calc(100vh - 60px)' }}>
-      {/* 3. Mostramos el formulario */}
-      <Formulario />
-    </main>
+    // 2. ENVUELVE TU PÁGINA CON EL GUARDIA
+    <ProtectedRoute>
+      <main style={{ backgroundColor: '#e6f5e6', minHeight: 'calc(100vh - 60px)' }}>
+        <Formulario />
+      </main>
+    </ProtectedRoute>
   );
 }

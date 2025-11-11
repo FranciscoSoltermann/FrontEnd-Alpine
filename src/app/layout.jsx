@@ -2,12 +2,13 @@
 
 import { Inter } from 'next/font/google';
 import './globals.css';
-import Header from '@/app/components/Header.jsx';
+import Header from './components/Header.jsx';
+import { AuthProvider } from './components/AuthContext.jsx'; // 1. IMPORTA EL PROVIDER
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'Hotel Premier', // Título general de la aplicación
+  title: 'Hotel Premier',
   description: 'Sistema de Gestión Hotelera',
 };
 
@@ -15,8 +16,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="es">
       <body className={inter.className}>
-        <Header /> {/* 2. COLOCA EL HEADER AQUÍ (arriba de children) */}
-        {children} {/* 3. El resto de tu página (ej. login, alta) se renderizará aquí */}
+        {/* 2. ENVUELVE TU APP CON EL PROVIDER */}
+        <AuthProvider>
+          <Header />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
