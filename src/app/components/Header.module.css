@@ -65,3 +65,21 @@
   color: #ffffff;
   text-decoration: underline;
 }
+.iconLink {
+  display: flex; 
+  align-items: center;
+  height: 100%; 
+}
+
+/* Estilo para el ícono de React Icons */
+.loginIcon {
+  color: #ecf0f1; /* Le da un color claro directamente al ícono */
+  opacity: 0.8; 
+  transition: opacity 0.2s ease, color 0.2s ease; /* Transición para el color también */
+}
+
+/* Efecto hover para el ícono */
+.iconLink:hover .loginIcon {
+  opacity: 1; 
+  color: #ffffff; /* Brillo completo y color blanco al pasar el mouse */
+}

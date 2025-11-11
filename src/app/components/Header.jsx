@@ -1,32 +1,35 @@
 'use client';
 import Link from 'next/link';
 import styles from './Header.module.css';
-import { useAuth } from './AuthContext.jsx'; // 1. Importa el hook
+import { useAuth } from './AuthContext.jsx'; // Importa el hook
 import { useRouter } from 'next/navigation';
+import { FaUser } from 'react-icons/fa'; // Importa el ícono de usuario
 
 export default function Header() {
-  const { user, logout } = useAuth(); // 2. Obtiene el usuario y la función de logout
+  const { user, logout } = useAuth(); // Obtiene el usuario y la función de logout
   const router = useRouter();
 
   const handleLogout = () => {
-    logout(); // 3. Llama a la función de logout
-    router.push('/login'); // 4. Envía al usuario al login
+    logout(); // Llama a la función de logout
+    router.push('/login'); // Envía al usuario al login
   };
 
   return (
     <header className={styles.header}>
       <nav className={styles.nav}>
         <div className={styles.logo}>
-          <Link href="/">Hotel Premier</Link>
+          {/* El logo te lleva al Dashboard (si estás logueado) o al Login (si no) */}
+          <Link href={user ? "/dashboard" : "/login"}>Hotel Premier</Link>
         </div>
         <ul className={styles.menu}>
-          {/* 5. Lógica condicional */}
+          
           {user ? (
-            // Si el usuario SÍ existe...
+            // --- SI EL USUARIO SÍ EXISTE ---
             <>
-              <li>
-                <Link href="/">Alta Huésped</Link>
-              </li>
+              {/* <li>
+                  <Link href="/">Alta Huésped</Link>  <-- LÍNEA ELIMINADA
+                </li> 
+              */}
               <li>
                 <button onClick={handleLogout} className={styles.logoutButton}>
                   Cerrar Sesión
@@ -34,11 +37,14 @@ export default function Header() {
               </li>
             </>
           ) : (
-            // Si el usuario NO existe...
+            // --- SI EL USUARIO NO EXISTE ---
             <li>
-              <Link href="/login">Iniciar Sesión</Link>
+              <Link href="/login" className={styles.iconLink} title="Iniciar Sesión">
+                <FaUser size={24} className={styles.loginIcon} /> 
+              </Link>
             </li>
           )}
+
         </ul>
       </nav>
     </header>

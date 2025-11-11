@@ -127,3 +127,23 @@
     gap: 1rem;
   }
 }
+.departamentoPisoContainer {
+  grid-column: span 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+/* Asegurar que los campos dentro del contenedor tengan el mismo tamaño */
+.departamentoPisoContainer .fieldWrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+  .departamentoPisoContainer {
+    grid-column: span 1;
+    grid-template-columns: 1fr;
+  }
+}

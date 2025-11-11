@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import styles from './Formulario.module.css';
+import { useRouter } from 'next/navigation';
 
 // 1. Estado inicial VÁLIDO (fuera del componente)
 const initialState = {
@@ -17,6 +18,7 @@ const initialState = {
   posicionIVA: 'Consumidor_Final',
   pais: '',
   provincia: '',
+  localidad: '', 
   codigoPostal: '',
   calle: '',
   numero: '',
@@ -27,7 +29,7 @@ const initialState = {
 export default function Formulario() {
   // 2. Hook principal
   const [formData, setFormData] = useState(initialState);
-
+  const router = useRouter();
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -54,7 +56,7 @@ export default function Formulario() {
       direccion: {
         pais: formData.pais,
         provincia: formData.provincia,
-        localidad: '',
+        localidad: formData.localidad,
         calle: formData.calle,
         numero: formData.numero,
         departamento: formData.departamento,
@@ -85,7 +87,16 @@ export default function Formulario() {
       alert(`Hubo un error al guardar el huésped. Revisa la consola: ${error.message}`);
     }
   };
-
+  const handleCancel = () => {
+    // 1. MENSAJE DE PRUEBA
+    console.log("¡HICISTE CLIC EN CANCELAR!"); 
+    
+    // 2. Resetea el formulario
+    setFormData(initialState); 
+    
+    // 3. Te lleva al dashboard
+    router.push('/dashboard'); 
+  };
   const Label = ({ htmlFor, children, required = false }) => (
     <label htmlFor={htmlFor}>
       {children} {required && <span className={styles.asterisk}>(*)</span>}
@@ -241,42 +252,54 @@ export default function Formulario() {
 
         <h2 className={styles.subtitle}>Dirección</h2>
 
-        <div className={styles.gridContainer}>
-          <div className={styles.fieldWrapper}>
-            <Label htmlFor="pais" required>País</Label>
-            <input
-              type="text"
-              name="pais"
-              value={formData.pais}
-              onChange={handleChange}
-              className={styles.inputField}
-              required
-            />
-          </div>
+<div className={styles.gridContainer}>
+  <div className={styles.fieldWrapper}>
+    <Label htmlFor="pais" required>País</Label>
+    <input
+      type="text"
+      name="pais"
+      value={formData.pais}
+      onChange={handleChange}
+      className={styles.inputField}
+      required
+    />
+  </div>
 
-          <div className={styles.fieldWrapper}>
-            <Label htmlFor="provincia" required>Provincia</Label>
-            <input
-              type="text"
-              name="provincia"
-              value={formData.provincia}
-              onChange={handleChange}
-              className={styles.inputField}
-              required
-            />
-          </div>
+  <div className={styles.fieldWrapper}>
+    <Label htmlFor="provincia" required>Provincia</Label>
+    <input
+      type="text"
+      name="provincia"
+      value={formData.provincia}
+      onChange={handleChange}
+      className={styles.inputField}
+      required
+    />
+  </div>
 
-          <div className={styles.fieldWrapper}>
-            <Label htmlFor="codigoPostal" required>Código Postal</Label>
-            <input
-              type="text"
-              name="codigoPostal"
-              value={formData.codigoPostal}
-              onChange={handleChange}
-              className={styles.inputField}
-              required
-            />
-          </div>
+  <div className={styles.fieldWrapper}>
+    <Label htmlFor="localidad" required>Localidad</Label>
+    <input
+      type="text"
+      name="localidad"
+      value={formData.localidad}
+      onChange={handleChange}
+      className={styles.inputField}
+      required
+    />
+  </div>
+
+  <div className={styles.fieldWrapper}>
+    <Label htmlFor="codigoPostal" required>Código Postal</Label>
+    <input
+      type="text"
+      name="codigoPostal"
+      value={formData.codigoPostal}
+      onChange={handleChange}
+      className={styles.inputField}
+      required
+    />
+  </div>
 
           <div className={styles.fieldWrapper}>
             <Label htmlFor="calle" required>Calle</Label>
@@ -302,7 +325,8 @@ export default function Formulario() {
             />
           </div>
 
-          <div className={`${styles.fieldWrapper} ${styles.colSpan2}`}>
+         <div className={styles.departamentoPisoContainer}>
+          <div className={styles.fieldWrapper}>
             <Label htmlFor="departamento">Departamento</Label>
             <input
               type="text"
@@ -324,9 +348,12 @@ export default function Formulario() {
             />
           </div>
         </div>
+        </div>
 
         <div className={styles.buttonContainer}>
-          <button type="button" className={`${styles.button} ${styles.cancelButton}`}>
+          <button type="button" className={`${styles.button} ${styles.cancelButton}`}
+            onClick={handleCancel}
+            >
             CANCELAR
           </button>
           <button type="submit" className={`${styles.button} ${styles.submitButton}`}>

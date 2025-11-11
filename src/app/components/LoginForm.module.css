@@ -2,7 +2,7 @@
 
 .loginContainer {
   width: 100%;
-  max-width: 400px;
+  max-width: 450px;
   margin: 5rem auto;
   padding: 2.5rem;
   background-color: #ffffff;
@@ -12,10 +12,10 @@
 
 .title {
   text-align: center;
-  font-size: 1.8rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: #333;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
 }
 
 .fieldWrapper {
@@ -23,44 +23,98 @@
 }
 
 .fieldWrapper label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #2d2d2d;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 .inputField {
   width: 100%;
-  padding: 0.8rem;
-  border: 1px solid #cccccc;
-  border-radius: 5px;
-  font-size: 0.9rem;
+  padding: 1rem 1.5rem;
+  border: 1px solid #000000;
+  border-radius: 50px;
+  font-size: 1rem;
   box-sizing: border-box; 
+  color: #333;
+}
+
+.inputField::placeholder {
+  color: #aaa;
+}
+
+.passwordWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.passwordWrapper .inputField {
+  width: 100%;
+  padding-right: 3.5rem; /* Espacio para el ícono */
+}
+
+.eyeIcon {
+  position: absolute;
+  right: 1.5rem;
+  cursor: pointer;
+  color: #888;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+}
+
+/* --- CLASE .forgotLink ELIMINADA --- */
+
+.submitButton,
+.registerButton {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 1rem;
+  font-weight: bold;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 1rem;
+  text-decoration: none;
+  text-align: center;
+  transition: all 0.2s ease;
 }
 
 .submitButton {
-  width: 100%;
-  padding: 0.9rem;
-  font-weight: bold;
   color: white;
-  background-color: #007bff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.2s ease;
+  background-color: #000000;
+  border: 2px solid #000000;
+  margin-bottom: 1rem;
 }
 
 .submitButton:hover {
-  background-color: #0056b3;
+  background-color: #333;
+  border-color: #333;
 }
 
-/* Estilo para el mensaje de error */
+.registerButton {
+  color: #000000;
+  background-color: #ffffff;
+  border: 2px solid #000000;
+  display: block;
+}
+
+.registerButton:hover {
+  background-color: #f8f8f8;
+  color: #333;
+}
+
 .errorMessage {
-  color: #d9534f; /* Rojo */
+  color: #d9534f;
   text-align: center;
-  margin-bottom: 1rem;
+  /* Ajustamos el margen que antes daba el link "olvidé contraseña" */
+  margin-bottom: 1.5rem;
+  margin-top: 1rem;
   font-size: 0.9rem;
   font-weight: 500;
 }

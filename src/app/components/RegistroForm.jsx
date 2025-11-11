@@ -1,23 +1,24 @@
 'use client';
 import { useState } from 'react';
-import styles from './LoginForm.module.css';
-import { useAuth } from './AuthContext.jsx';
+import styles from './LoginForm.module.css'; // Reusamos los estilos del Login
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+// --- 1. IMPORTA LOS ÍCONOS ---
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
-export default function LoginForm() {
+export default function RegistroForm() {
   const [nombre, setNombre] = useState('');
   const [contrasenia, setContrasenia] = useState('');
+  // --- 2. AÑADE EL ESTADO PARA MOSTRAR/OCULTAR ---
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const { login } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const API_URL = 'http://localhost:8080/api/usuarios/login'; 
+
+    const API_URL = 'http://localhost:8080/api/usuarios/registrar'; 
 
     try {
       const respuesta = await fetch(API_URL, {
@@ -28,15 +29,16 @@ export default function LoginForm() {
 
       if (!respuesta.ok) {
         const errorMsg = await respuesta.text();
-        setError(errorMsg || 'Usuario o contraseña incorrectos');
+        setError(errorMsg);
         return;
       }
 
       const usuario = await respuesta.json();
-      login(usuario);
-      alert('¡Bienvenido, ' + usuario.nombre + '!');
-      router.push('/dashboard'); 
+      console.log('Usuario registrado:', usuario);
+      alert('¡Usuario registrado con éxito! Ahora puedes iniciar sesión.');
       
+      router.push('/login'); 
+
     } catch (err) {
       console.error('Error de conexión:', err);
       setError('No se pudo conectar con el servidor.');
@@ -46,31 +48,30 @@ export default function LoginForm() {
   return (
     <div className={styles.loginContainer}>
       <form onSubmit={handleSubmit}>
-        <h1 className={styles.title}>ENTRAR CON USUARIO Y CONTRASEÑA</h1>
+        <h1 className={styles.title}>REGISTRARSE</h1>
         
         <div className={styles.fieldWrapper}>
-          <label htmlFor="username">Usuario</label>
+          <label htmlFor="username">Usuario (o E-mail)</label>
           <input
             type="text"
             id="username"
-            name="username"
             className={styles.inputField}
-            placeholder="Ingrese su usuario"
+            placeholder="Ej.: tu-usuario"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
             required
           />
         </div>
 
+        {/* --- 3. REEMPLAZA EL INPUT DE CONTRASEÑA POR ESTE BLOQUE --- */}
         <div className={styles.fieldWrapper}>
           <label htmlFor="password">Contraseña</label>
           <div className={styles.passwordWrapper}>
             <input
               type={showPassword ? 'text' : 'password'}
               id="password"
-              name="password"
               className={styles.inputField}
-              placeholder="Ingrese su contraseña"
+              placeholder="Ingresá tu contraseña"
               value={contrasenia}
               onChange={(e) => setContrasenia(e.target.value)}
               required
@@ -83,19 +84,16 @@ export default function LoginForm() {
             </span>
           </div>
         </div>
+        {/* --- FIN DEL BLOQUE DE CONTRASEÑA --- */}
 
-        {/* --- LÍNEA ELIMINADA --- */}
-        {/* <a href="#" className={styles.forgotLink}>Olvidé mi contraseña</a> */}
-
-        {/* El margen se ajusta en el CSS (ver abajo) */}
         {error && <p className={styles.errorMessage}>{error}</p>}
 
         <button type="submit" className={styles.submitButton}>
-          INICIAR SESIÓN
+          REGISTRARME
         </button>
 
-        <Link href="/registro" className={styles.registerButton}>
-          REGISTRARME
+        <Link href="/login" className={styles.registerButton}>
+          ¿Ya tenés cuenta? Iniciar sesión
         </Link>
         
       </form>
