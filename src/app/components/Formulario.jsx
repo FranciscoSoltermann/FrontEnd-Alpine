@@ -29,6 +29,7 @@ const initialState = {
 export default function Formulario() {
   // 2. Hook principal
   const [formData, setFormData] = useState(initialState);
+  const [errores, setErrores] = useState({});
   const router = useRouter();
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -40,12 +41,14 @@ export default function Formulario() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrores({}); // Limpiamos errores anteriores en cada intento
 
+    // (Tu mapeo de objeto estaba perfecto)
     const huesped = {
       nombre: formData.nombre,
-      apellido: formData.apellidos,
+      apellido: formData.apellidos, // El DTO espera 'apellido'
       tipoDocumento: formData.tipoDocumento,
-      documento: formData.numeroDocumento,
+      documento: formData.numeroDocumento, // El DTO espera 'documento'
       fechaNacimiento: formData.fechaNacimiento,
       nacionalidad: formData.nacionalidad,
       cuit: formData.cuit,
@@ -72,21 +75,33 @@ export default function Formulario() {
         body: JSON.stringify(huesped),
       });
 
+      // --- ¡ESTA ES LA LÓGICA CLAVE! ---
       if (!respuesta.ok) {
-        const errorTexto = await respuesta.text();
-        throw new Error(`Error del servidor: ${errorTexto}`);
+        // Si hay un error (400, 409, 500...), leemos el JSON de error
+        const erroresDelBackend = await respuesta.json();
+        setErrores(erroresDelBackend); // Guardamos los errores en el estado
+        console.error('Errores de validación:', erroresDelBackend);
+        alert("Por favor, corrige los errores marcados en el formulario.");
+        return; // Detenemos la ejecución
       }
+      // --- Fin de la lógica de error ---
 
+      // Si todo salió bien:
       const data = await respuesta.json();
       console.log('Huésped guardado correctamente:', data);
       alert(`Huésped "${data.nombre} ${data.apellido}" dado de alta correctamente.`);
 
       setFormData(initialState);
+      router.push('/dashboard'); // Opcional: te lleva al dashboard
+
     } catch (error) {
-      console.error('Error al guardar huésped:', error);
-      alert(`Hubo un error al guardar el huésped. Revisa la consola: ${error.message}`);
+      // Esto solo captura errores de RED (ej. servidor caído)
+      console.error('Error de red:', error);
+      // Mostramos un error "global"
+      setErrores({ global: `Error de conexión: ${error.message}` });
     }
   };
+
   const handleCancel = () => {
     // 1. MENSAJE DE PRUEBA
     console.log("¡HICISTE CLIC EN CANCELAR!"); 
@@ -121,6 +136,8 @@ export default function Formulario() {
               className={styles.inputField}
               required
             />
+            {/* Si hay un error para 'apellido', se muestra aquí */}
+            {errores.apellido && <p className={styles.error}>{errores.apellido}</p>}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -133,6 +150,7 @@ export default function Formulario() {
               className={styles.inputField}
               required
             />
+            {errores.nombre && <p className={styles.error}>{errores.nombre}</p>}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -150,6 +168,7 @@ export default function Formulario() {
               <option value="LC">LC</option>
               <option value="OTRO">OTRO</option>
             </select>
+            {errores.tipoDocumento && <p className={styles.error}>{errores.tipoDocumento}</p>}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -162,6 +181,8 @@ export default function Formulario() {
               className={styles.inputField}
               required
             />
+            {/* El DTO lo recibe como 'documento', así que el error vendrá con esa clave */}
+            {errores.documento && <p className={styles.error}>{errores.documento}</p>}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -174,6 +195,7 @@ export default function Formulario() {
               className={styles.inputField}
               required
             />
+            {errores.fechaNacimiento && <p className={styles.error}>{errores.fechaNacimiento}</p>}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -186,6 +208,7 @@ export default function Formulario() {
               className={styles.inputField}
               required
             />
+            {errores.nacionalidad && <p className={styles.error}>{errores.nacionalidad}</p>}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -197,6 +220,7 @@ export default function Formulario() {
               onChange={handleChange}
               className={styles.inputField}
             />
+            {errores.cuit && <p className={styles.error}>{errores.cuit}</p>}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -209,6 +233,7 @@ export default function Formulario() {
               className={styles.inputField}
               required
             />
+            {errores.telefono && <p className={styles.error}>{errores.telefono}</p>}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -221,6 +246,7 @@ export default function Formulario() {
               className={styles.inputField}
               required
             />
+            {errores.ocupacion && <p className={styles.error}>{errores.ocupacion}</p>}
           </div>
 
           <div className={`${styles.fieldWrapper} ${styles.colSpan2}`}>
@@ -232,6 +258,7 @@ export default function Formulario() {
               onChange={handleChange}
               className={styles.inputField}
             />
+            {errores.email && <p className={styles.error}>{errores.email}</p>}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -247,59 +274,65 @@ export default function Formulario() {
               <option value="Responsable_Inscripto">Responsable Inscripto</option>
               <option value="Monotributista">Monotributista</option>
             </select>
+            {errores.posicionIVA && <p className={styles.error}>{errores.posicionIVA}</p>}
           </div>
         </div>
 
         <h2 className={styles.subtitle}>Dirección</h2>
 
-<div className={styles.gridContainer}>
-  <div className={styles.fieldWrapper}>
-    <Label htmlFor="pais" required>País</Label>
-    <input
-      type="text"
-      name="pais"
-      value={formData.pais}
-      onChange={handleChange}
-      className={styles.inputField}
-      required
-    />
-  </div>
+        <div className={styles.gridContainer}>
+          <div className={styles.fieldWrapper}>
+            <Label htmlFor="pais" required>País</Label>
+            <input
+              type="text"
+              name="pais"
+              value={formData.pais}
+              onChange={handleChange}
+              className={styles.inputField}
+              required
+            />
+            {/* Los errores de campos anidados (DireccionDTO) vienen con "objeto.campo" */}
+            {errores['direccion.pais'] && <p className={styles.error}>{errores['direccion.pais']}</p>}
+          </div>
 
-  <div className={styles.fieldWrapper}>
-    <Label htmlFor="provincia" required>Provincia</Label>
-    <input
-      type="text"
-      name="provincia"
-      value={formData.provincia}
-      onChange={handleChange}
-      className={styles.inputField}
-      required
-    />
-  </div>
+          <div className={styles.fieldWrapper}>
+            <Label htmlFor="provincia" required>Provincia</Label>
+            <input
+              type="text"
+              name="provincia"
+              value={formData.provincia}
+              onChange={handleChange}
+              className={styles.inputField}
+              required
+            />
+            {errores['direccion.provincia'] && <p className={styles.error}>{errores['direccion.provincia']}</p>}
+          </div>
 
-  <div className={styles.fieldWrapper}>
-    <Label htmlFor="localidad" required>Localidad</Label>
-    <input
-      type="text"
-      name="localidad"
-      value={formData.localidad}
-      onChange={handleChange}
-      className={styles.inputField}
-      required
-    />
-  </div>
+          <div className={styles.fieldWrapper}>
+            <Label htmlFor="localidad" required>Localidad</Label>
+            <input
+              type="text"
+              name="localidad"
+              value={formData.localidad}
+              onChange={handleChange}
+              className={styles.inputField}
+              required
+            />
+            {errores['direccion.localidad'] && <p className={styles.error}>{errores['direccion.localidad']}</p>}
+          </div>
 
-  <div className={styles.fieldWrapper}>
-    <Label htmlFor="codigoPostal" required>Código Postal</Label>
-    <input
-      type="text"
-      name="codigoPostal"
-      value={formData.codigoPostal}
-      onChange={handleChange}
-      className={styles.inputField}
-      required
-    />
-  </div>
+          <div className={styles.fieldWrapper}>
+            <Label htmlFor="codigoPostal" required>Código Postal</Label>
+            <input
+              type="text"
+              name="codigoPostal"
+              value={formData.codigoPostal}
+              onChange={handleChange}
+              className={styles.inputField}
+              required
+            />
+            {errores['direccion.codigoPostal'] && <p className={styles.error}>{errores['direccion.codigoPostal']}</p>}
+          </div>
 
           <div className={styles.fieldWrapper}>
             <Label htmlFor="calle" required>Calle</Label>
@@ -311,6 +344,7 @@ export default function Formulario() {
               className={styles.inputField}
               required
             />
+            {errores['direccion.calle'] && <p className={styles.error}>{errores['direccion.calle']}</p>}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -323,32 +357,55 @@ export default function Formulario() {
               className={styles.inputField}
               required
             />
+            {errores['direccion.numero'] && <p className={styles.error}>{errores['direccion.numero']}</p>}
           </div>
 
-         <div className={styles.departamentoPisoContainer}>
-          <div className={styles.fieldWrapper}>
-            <Label htmlFor="departamento">Departamento</Label>
-            <input
-              type="text"
-              name="departamento"
-              value={formData.departamento}
-              onChange={handleChange}
-              className={styles.inputField}
-            />
-          </div>
+          <div className={styles.departamentoPisoContainer}>
+            <div className={styles.fieldWrapper}>
+              <Label htmlFor="departamento">Departamento</Label>
+              <input
+                type="text"
+                name="departamento"
+                value={formData.departamento}
+                onChange={handleChange}
+                className={styles.inputField}
+              />
+              {errores['direccion.departamento'] && <p className={styles.error}>{errores['direccion.departamento']}</p>}
+            </div>
 
-          <div className={styles.fieldWrapper}>
-            <Label htmlFor="piso">Piso</Label>
-            <input
-              type="text"
-              name="piso"
-              value={formData.piso}
-              onChange={handleChange}
-              className={styles.inputField}
-            />
+            <div className={styles.fieldWrapper}>
+              <Label htmlFor="piso">Piso</Label>
+              <input
+                type="text"
+                name="piso"
+                value={formData.piso}
+                onChange={handleChange}
+                className={styles.inputField}
+              />
+              {errores['direccion.piso'] && <p className={styles.error}>{errores['direccion.piso']}</p>}
+            </div>
           </div>
         </div>
+
+        {/* --- Contenedor para Errores Globales --- */}
+        <div className={styles.globalErrorContainer}>
+          {/* Error de la validación @AssertTrue (isCuitConsistente) */}
+          {errores.huespedDTO && (
+            <p className={styles.errorGlobal}>{errores.huespedDTO}</p>
+          )}
+          
+          {/* Error de lógica (ej. CuitExistente) */}
+          {errores.error && (
+            <p className={styles.errorGlobal}>{errores.error}</p>
+          )}
+
+          {/* Error de red (del catch) */}
+          {errores.global && (
+            <p className={styles.errorGlobal}>{errores.global}</p>
+          )}
         </div>
+        {/* --- Fin de Errores Globales --- */}
+
 
         <div className={styles.buttonContainer}>
           <button type="button" className={`${styles.button} ${styles.cancelButton}`}
