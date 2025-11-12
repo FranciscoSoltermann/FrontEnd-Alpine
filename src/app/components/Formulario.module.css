@@ -147,3 +147,65 @@
     grid-template-columns: 1fr;
   }
 }
+.error {
+  color: #d32f2f;
+  background-color: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  position: relative;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.error::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 10px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid #ffcdd2;
+}
+
+.error::after {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 10px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid #ffebee;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Estilo para campos con error */
+.inputField.errorField,
+.selectField.errorField {
+  border-color: #d32f2f;
+  background-color: #fff5f5;
+}
+
+/* Contenedor de errores globales */
+.globalErrorContainer {
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+}
+
+.errorGlobal {
+  color: #d32f2f;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}

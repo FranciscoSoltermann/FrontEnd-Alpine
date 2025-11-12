@@ -6,7 +6,6 @@ import ActionModal from './ActionModal';
 import ErrorModal from './ErrorModal';
 import InfoModal from './InfoModal';
 
-
 // 1. Estado inicial VÁLIDO (fuera del componente)
 const initialState = {
   apellidos: '',
@@ -30,6 +29,16 @@ const initialState = {
   piso: '',
 };
 
+// Función helper para determinar si un campo tiene error
+const hasError = (errores, fieldName) => {
+  return errores[fieldName] !== undefined;
+};
+
+// Función helper para obtener mensaje de error
+const getErrorMessage = (errores, fieldName) => {
+  return errores[fieldName];
+};
+
 export default function Formulario() {
   // 2. Hook principal
   const [formData, setFormData] = useState(initialState);
@@ -38,113 +47,142 @@ export default function Formulario() {
   const [modalData, setModalData] = useState(null);
   const [modalError, setModalError] = useState(null);
   const [infoModalData, setInfoModalData] = useState(null);
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
     }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErrores({}); // Limpiamos errores anteriores en cada intento
-
-    // (Tu mapeo de objeto estaba perfecto)
-    const huesped = {
-      nombre: formData.nombre,
-      apellido: formData.apellidos, // El DTO espera 'apellido'
-      tipoDocumento: formData.tipoDocumento,
-      documento: formData.numeroDocumento, // El DTO espera 'documento'
-      fechaNacimiento: formData.fechaNacimiento,
-      nacionalidad: formData.nacionalidad,
-      cuit: formData.cuit,
-      telefono: formData.telefono,
-      ocupacion: formData.ocupacion,
-      email: formData.email,
-      posicionIVA: formData.posicionIVA,
-      direccion: {
-        pais: formData.pais,
-        provincia: formData.provincia,
-        localidad: formData.localidad,
-        calle: formData.calle,
-        numero: formData.numero,
-        departamento: formData.departamento,
-        piso: formData.piso,
-        codigoPostal: formData.codigoPostal,
-      },
-    };
-
-    try {
-      const respuesta = await fetch('http://localhost:8080/api/huespedes/alta', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(huesped),
-      });
-
-      // --- ¡ESTA ES LA LÓGICA CLAVE! ---
-      if (!respuesta.ok) {
-        // Si hay un error (400, 409, 500...), leemos el JSON de error
-        const erroresDelBackend = await respuesta.json();
-        setErrores(erroresDelBackend); // Guardamos los errores en el estado
-        console.error('Errores de validación:', erroresDelBackend);
-        setModalData({
-          titulo: "Cartel de Advertencia", // Título como en tu imagen
-          // Texto descriptivo: si el back-end mandó un error global (como "CUIT ya existe") lo usamos.
-          // Si no, ponemos un mensaje genérico.
-          descripcion: erroresDelBackend.error || "Se encontraron errores en la carga de datos. Por favor, revise los campos marcados.",
-          cancelText: "Cerrar", // "Acción 1" (Botón Rojo)
-          confirmText: "Aceptar", // "Acción 2" (Botón Verde)
-          // Ambas acciones solo cerrarán el modal para que el usuario pueda corregir los campos.
-          onCancel: () => setModalData(null),
-          onConfirm: () => setModalData(null)
-        });
-        return; // Detenemos la ejecución
-      }
-      // --- Fin de la lógica de error ---
-
-      // Si todo salió bien:
-      const data = await respuesta.json();
-      console.log('Huésped guardado correctamente:', data);
-      alert(`Huésped "${data.nombre} ${data.apellido}" dado de alta correctamente.`);
-
-      setFormData(initialState);
-      router.push('/dashboard'); // Opcional: te lleva al dashboard
-
-    } catch (error) {
-      // Esto solo captura errores de RED (ej. servidor caído)
-      console.error('Error de red:', error);
-      setModalError(`Error de conexión: ${error.message}. Revisa si el servidor está funcionando.`);
-      // Mostramos un error "global"
-      setModalData({
-        titulo: "Cartel de Error",
-        descripcion: `Error de conexión: ${error.message}. Verifique que el servidor esté funcionando.`,
-        cancelText: "Cerrar",
-        confirmText: "Reintentar",
-        onCancel: () => setModalData(null),
-        onConfirm: () => {
-          setModalData(null);
-          handleSubmit(e); // Opcional: el botón verde reintenta el envío
-        }
+    // Limpiar error del campo cuando el usuario empiece a escribir
+    if (errores[name]) {
+      setErrores(prev => {
+        const newErrores = { ...prev };
+        delete newErrores[name];
+        return newErrores;
       });
     }
   };
+
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  setErrores({}); // Limpia errores anteriores
+
+  const huesped = {
+    nombre: formData.nombre,
+    apellido: formData.apellidos,
+    tipoDocumento: formData.tipoDocumento,
+    documento: formData.numeroDocumento,
+    fechaNacimiento: formData.fechaNacimiento,
+    nacionalidad: formData.nacionalidad,
+    cuit: formData.cuit,
+    telefono: formData.telefono,
+    ocupacion: formData.ocupacion,
+    email: formData.email,
+    posicionIVA: formData.posicionIVA,
+    direccion: {
+      pais: formData.pais,
+      provincia: formData.provincia,
+      localidad: formData.localidad,
+      calle: formData.calle,
+      numero: formData.numero,
+      departamento: formData.departamento,
+      piso: formData.piso,
+      codigoPostal: formData.codigoPostal,
+    },
+  };
+
+  try {
+    const respuesta = await fetch('http://localhost:8080/api/huespedes/alta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(huesped),
+    });
+
+    // 🔹 Si la respuesta NO es OK (ej. 400, 409, etc.)
+    if (!respuesta.ok) {
+      const errorData = await respuesta.json();
+
+      const erroresMapeados = {};
+      const fieldMapping = {
+        'apellido': 'apellidos',
+        'documento': 'numeroDocumento',
+        'direccion.pais': 'pais',
+        'direccion.provincia': 'provincia',
+        'direccion.localidad': 'localidad',
+        'direccion.codigoPostal': 'codigoPostal',
+        'direccion.calle': 'calle',
+        'direccion.numero': 'numero',
+        'direccion.departamento': 'departamento',
+        'direccion.piso': 'piso'
+      };
+
+      Object.keys(errorData).forEach(key => {
+        if (key === 'error' || key === 'huespedDTO') {
+          erroresMapeados[key] = errorData[key];
+        } else {
+          const fieldName = fieldMapping[key] || key;
+          erroresMapeados[fieldName] = errorData[key];
+        }
+      });
+
+      setErrores(erroresMapeados);
+
+      setModalData({
+        titulo: "Cartel de Advertencia",
+        descripcion: errorData.error || "Se encontraron errores en la carga de datos. Por favor, revise los campos marcados.",
+        cancelText: "Cerrar",
+        confirmText: "Aceptar",
+        onCancel: () => setModalData(null),
+        onConfirm: () => setModalData(null)
+      });
+
+      return; // 👈 Detiene la ejecución (no intenta parsear data)
+    }
+
+    // 🔹 Si la respuesta es OK (200–299)
+    const data = await respuesta.json();
+    console.log('Huésped guardado correctamente:', data);
+    alert(`Huésped "${data.nombre} ${data.apellido}" dado de alta correctamente.`);
+
+    setFormData(initialState);
+    router.push('/dashboard');
+
+  } catch (error) {
+    // 🔹 Este catch solo maneja errores de red (CORS, servidor caído, etc.)
+    console.error('Error de conexión:', error);
+    setErrores({ global: 'No se pudo conectar con el servidor. Revisa tu CORS.' });
+
+    setModalData({
+      titulo: "Cartel de Error",
+      descripcion: `Error de conexión: ${error.message}. Verifique que el servidor esté funcionando.`,
+      cancelText: "Cerrar",
+      confirmText: "Reintentar",
+      onCancel: () => setModalData(null),
+      onConfirm: () => {
+        setModalData(null);
+        handleSubmit(e);
+      }
+    });
+  }
+};
+
 
   const handleCancel = () => {
     setInfoModalData({
       titulo: "Confirmar Cancelación",
       descripcion: "¿Estás seguro de que deseas cancelar? Se perderán todos los datos no guardados.",
-      cancelText: "No, seguir editando", // Acción 1 (Rojo)
-      confirmText: "Sí, cancelar", // Acción 2 (Verde)
-      onCancel: () => setInfoModalData(null), // Cierra el modal
+      cancelText: "No, seguir editando",
+      confirmText: "Sí, cancelar",
+      onCancel: () => setInfoModalData(null),
       onConfirm: () => {
-        // Ejecuta la acción de cancelación real
         setInfoModalData(null);
         setFormData(initialState); 
         router.push('/dashboard'); 
       }
     });
   };
+
   const Label = ({ htmlFor, children, required = false }) => (
     <label htmlFor={htmlFor}>
       {children} {required && <span className={styles.asterisk}>(*)</span>}
@@ -159,6 +197,7 @@ export default function Formulario() {
         <h2 className={styles.subtitle}>Datos Personales</h2>
 
         <div className={styles.gridContainer}>
+          {/* Campo Apellidos */}
           <div className={styles.fieldWrapper}>
             <Label htmlFor="apellidos" required>Apellidos</Label>
             <input
@@ -166,13 +205,15 @@ export default function Formulario() {
               name="apellidos"
               value={formData.apellidos}
               onChange={handleChange}
-              className={styles.inputField}
+              className={`${styles.inputField} ${hasError(errores, 'apellidos') ? styles.errorField : ''}`}
               required
             />
-            {/* Si hay un error para 'apellido', se muestra aquí */}
-            {errores.apellido && <p className={styles.error}>{errores.apellido}</p>}
+            {hasError(errores, 'apellidos') && (
+              <div className={styles.error}>{getErrorMessage(errores, 'apellidos')}</div>
+            )}
           </div>
 
+          {/* Campo Nombre */}
           <div className={styles.fieldWrapper}>
             <Label htmlFor="nombre" required>Nombre</Label>
             <input
@@ -180,19 +221,22 @@ export default function Formulario() {
               name="nombre"
               value={formData.nombre}
               onChange={handleChange}
-              className={styles.inputField}
+              className={`${styles.inputField} ${hasError(errores, 'nombre') ? styles.errorField : ''}`}
               required
             />
-            {errores.nombre && <p className={styles.error}>{errores.nombre}</p>}
+            {hasError(errores, 'nombre') && (
+              <div className={styles.error}>{getErrorMessage(errores, 'nombre')}</div>
+            )}
           </div>
 
+          {/* Campo Tipo Documento */}
           <div className={styles.fieldWrapper}>
             <Label htmlFor="tipoDocumento" required>Tipo de Documento</Label>
             <select
               name="tipoDocumento"
               value={formData.tipoDocumento}
               onChange={handleChange}
-              className={styles.selectField}
+              className={`${styles.selectField} ${hasError(errores, 'tipoDocumento') ? styles.errorField : ''}`}
               required
             >
               <option value="DNI">DNI</option>
@@ -201,9 +245,12 @@ export default function Formulario() {
               <option value="LC">LC</option>
               <option value="OTRO">OTRO</option>
             </select>
-            {errores.tipoDocumento && <p className={styles.error}>{errores.tipoDocumento}</p>}
+            {hasError(errores, 'tipoDocumento') && (
+              <div className={styles.error}>{getErrorMessage(errores, 'tipoDocumento')}</div>
+            )}
           </div>
 
+          {/* Campo Número Documento */}
           <div className={styles.fieldWrapper}>
             <Label htmlFor="numeroDocumento" required>Número de Documento</Label>
             <input
@@ -211,12 +258,15 @@ export default function Formulario() {
               name="numeroDocumento"
               value={formData.numeroDocumento}
               onChange={handleChange}
-              className={styles.inputField}
+              className={`${styles.inputField} ${hasError(errores, 'numeroDocumento') ? styles.errorField : ''}`}
               required
             />
-            {/* El DTO lo recibe como 'documento', así que el error vendrá con esa clave */}
-            {errores.documento && <p className={styles.error}>{errores.documento}</p>}
+            {hasError(errores, 'numeroDocumento') && (
+              <div className={styles.error}>{getErrorMessage(errores, 'numeroDocumento')}</div>
+            )}
           </div>
+
+          {/* Resto de campos... (aplicar el mismo patrón a todos los campos) */}
 
           <div className={styles.fieldWrapper}>
             <Label htmlFor="fechaNacimiento" required>Fecha Nacimiento</Label>
@@ -225,10 +275,12 @@ export default function Formulario() {
               name="fechaNacimiento"
               value={formData.fechaNacimiento}
               onChange={handleChange}
-              className={styles.inputField}
+              className={`${styles.inputField} ${hasError(errores, 'fechaNacimiento') ? styles.errorField : ''}`}
               required
             />
-            {errores.fechaNacimiento && <p className={styles.error}>{errores.fechaNacimiento}</p>}
+            {hasError(errores, 'fechaNacimiento') && (
+              <div className={styles.error}>{getErrorMessage(errores, 'fechaNacimiento')}</div>
+            )}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -238,10 +290,12 @@ export default function Formulario() {
               name="nacionalidad"
               value={formData.nacionalidad}
               onChange={handleChange}
-              className={styles.inputField}
+              className={`${styles.inputField} ${hasError(errores, 'nacionalidad') ? styles.errorField : ''}`}
               required
             />
-            {errores.nacionalidad && <p className={styles.error}>{errores.nacionalidad}</p>}
+            {hasError(errores, 'nacionalidad') && (
+              <div className={styles.error}>{getErrorMessage(errores, 'nacionalidad')}</div>
+            )}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -251,9 +305,11 @@ export default function Formulario() {
               name="cuit"
               value={formData.cuit}
               onChange={handleChange}
-              className={styles.inputField}
+              className={`${styles.inputField} ${hasError(errores, 'cuit') ? styles.errorField : ''}`}
             />
-            {errores.cuit && <p className={styles.error}>{errores.cuit}</p>}
+            {hasError(errores, 'cuit') && (
+              <div className={styles.error}>{getErrorMessage(errores, 'cuit')}</div>
+            )}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -263,10 +319,12 @@ export default function Formulario() {
               name="telefono"
               value={formData.telefono}
               onChange={handleChange}
-              className={styles.inputField}
+              className={`${styles.inputField} ${hasError(errores, 'telefono') ? styles.errorField : ''}`}
               required
             />
-            {errores.telefono && <p className={styles.error}>{errores.telefono}</p>}
+            {hasError(errores, 'telefono') && (
+              <div className={styles.error}>{getErrorMessage(errores, 'telefono')}</div>
+            )}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -276,10 +334,12 @@ export default function Formulario() {
               name="ocupacion"
               value={formData.ocupacion}
               onChange={handleChange}
-              className={styles.inputField}
+              className={`${styles.inputField} ${hasError(errores, 'ocupacion') ? styles.errorField : ''}`}
               required
             />
-            {errores.ocupacion && <p className={styles.error}>{errores.ocupacion}</p>}
+            {hasError(errores, 'ocupacion') && (
+              <div className={styles.error}>{getErrorMessage(errores, 'ocupacion')}</div>
+            )}
           </div>
 
           <div className={`${styles.fieldWrapper} ${styles.colSpan2}`}>
@@ -289,9 +349,11 @@ export default function Formulario() {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className={styles.inputField}
+              className={`${styles.inputField} ${hasError(errores, 'email') ? styles.errorField : ''}`}
             />
-            {errores.email && <p className={styles.error}>{errores.email}</p>}
+            {hasError(errores, 'email') && (
+              <div className={styles.error}>{getErrorMessage(errores, 'email')}</div>
+            )}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -300,20 +362,23 @@ export default function Formulario() {
               name="posicionIVA"
               value={formData.posicionIVA}
               onChange={handleChange}
-              className={styles.selectField}
+              className={`${styles.selectField} ${hasError(errores, 'posicionIVA') ? styles.errorField : ''}`}
               required
             >
               <option value="Consumidor_Final">Consumidor Final</option>
               <option value="Responsable_Inscripto">Responsable Inscripto</option>
               <option value="Monotributista">Monotributista</option>
             </select>
-            {errores.posicionIVA && <p className={styles.error}>{errores.posicionIVA}</p>}
+            {hasError(errores, 'posicionIVA') && (
+              <div className={styles.error}>{getErrorMessage(errores, 'posicionIVA')}</div>
+            )}
           </div>
         </div>
 
         <h2 className={styles.subtitle}>Dirección</h2>
 
         <div className={styles.gridContainer}>
+          {/* Aplicar el mismo patrón a todos los campos de dirección */}
           <div className={styles.fieldWrapper}>
             <Label htmlFor="pais" required>País</Label>
             <input
@@ -321,11 +386,12 @@ export default function Formulario() {
               name="pais"
               value={formData.pais}
               onChange={handleChange}
-              className={styles.inputField}
+              className={`${styles.inputField} ${hasError(errores, 'pais') ? styles.errorField : ''}`}
               required
             />
-            {/* Los errores de campos anidados (DireccionDTO) vienen con "objeto.campo" */}
-            {errores['direccion.pais'] && <p className={styles.error}>{errores['direccion.pais']}</p>}
+            {hasError(errores, 'pais') && (
+              <div className={styles.error}>{getErrorMessage(errores, 'pais')}</div>
+            )}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -335,10 +401,12 @@ export default function Formulario() {
               name="provincia"
               value={formData.provincia}
               onChange={handleChange}
-              className={styles.inputField}
+              className={`${styles.inputField} ${hasError(errores, 'provincia') ? styles.errorField : ''}`}
               required
             />
-            {errores['direccion.provincia'] && <p className={styles.error}>{errores['direccion.provincia']}</p>}
+            {hasError(errores, 'provincia') && (
+              <div className={styles.error}>{getErrorMessage(errores, 'provincia')}</div>
+            )}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -348,10 +416,12 @@ export default function Formulario() {
               name="localidad"
               value={formData.localidad}
               onChange={handleChange}
-              className={styles.inputField}
+              className={`${styles.inputField} ${hasError(errores, 'localidad') ? styles.errorField : ''}`}
               required
             />
-            {errores['direccion.localidad'] && <p className={styles.error}>{errores['direccion.localidad']}</p>}
+            {hasError(errores, 'localidad') && (
+              <div className={styles.error}>{getErrorMessage(errores, 'localidad')}</div>
+            )}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -361,10 +431,12 @@ export default function Formulario() {
               name="codigoPostal"
               value={formData.codigoPostal}
               onChange={handleChange}
-              className={styles.inputField}
+              className={`${styles.inputField} ${hasError(errores, 'codigoPostal') ? styles.errorField : ''}`}
               required
             />
-            {errores['direccion.codigoPostal'] && <p className={styles.error}>{errores['direccion.codigoPostal']}</p>}
+            {hasError(errores, 'codigoPostal') && (
+              <div className={styles.error}>{getErrorMessage(errores, 'codigoPostal')}</div>
+            )}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -374,10 +446,12 @@ export default function Formulario() {
               name="calle"
               value={formData.calle}
               onChange={handleChange}
-              className={styles.inputField}
+              className={`${styles.inputField} ${hasError(errores, 'calle') ? styles.errorField : ''}`}
               required
             />
-            {errores['direccion.calle'] && <p className={styles.error}>{errores['direccion.calle']}</p>}
+            {hasError(errores, 'calle') && (
+              <div className={styles.error}>{getErrorMessage(errores, 'calle')}</div>
+            )}
           </div>
 
           <div className={styles.fieldWrapper}>
@@ -387,10 +461,12 @@ export default function Formulario() {
               name="numero"
               value={formData.numero}
               onChange={handleChange}
-              className={styles.inputField}
+              className={`${styles.inputField} ${hasError(errores, 'numero') ? styles.errorField : ''}`}
               required
             />
-            {errores['direccion.numero'] && <p className={styles.error}>{errores['direccion.numero']}</p>}
+            {hasError(errores, 'numero') && (
+              <div className={styles.error}>{getErrorMessage(errores, 'numero')}</div>
+            )}
           </div>
 
           <div className={styles.departamentoPisoContainer}>
@@ -401,9 +477,11 @@ export default function Formulario() {
                 name="departamento"
                 value={formData.departamento}
                 onChange={handleChange}
-                className={styles.inputField}
+                className={`${styles.inputField} ${hasError(errores, 'departamento') ? styles.errorField : ''}`}
               />
-              {errores['direccion.departamento'] && <p className={styles.error}>{errores['direccion.departamento']}</p>}
+              {hasError(errores, 'departamento') && (
+                <div className={styles.error}>{getErrorMessage(errores, 'departamento')}</div>
+              )}
             </div>
 
             <div className={styles.fieldWrapper}>
@@ -413,32 +491,35 @@ export default function Formulario() {
                 name="piso"
                 value={formData.piso}
                 onChange={handleChange}
-                className={styles.inputField}
+                className={`${styles.inputField} ${hasError(errores, 'piso') ? styles.errorField : ''}`}
               />
-              {errores['direccion.piso'] && <p className={styles.error}>{errores['direccion.piso']}</p>}
+              {hasError(errores, 'piso') && (
+                <div className={styles.error}>{getErrorMessage(errores, 'piso')}</div>
+              )}
             </div>
           </div>
         </div>
 
         {/* --- Contenedor para Errores Globales --- */}
-        <div className={styles.globalErrorContainer}>
-          {/* Error de la validación @AssertTrue (isCuitConsistente) */}
-          {errores.huespedDTO && (
-            <p className={styles.errorGlobal}>{errores.huespedDTO}</p>
-          )}
-          
-          {/* Error de lógica (ej. CuitExistente) */}
-          {errores.error && (
-            <p className={styles.errorGlobal}>{errores.error}</p>
-          )}
+        { (errores.huespedDTO || errores.error || errores.global) && (
+          <div className={styles.globalErrorContainer}>
+            {/* Error de la validación @AssertTrue (isCuitConsistente) */}
+            {errores.huespedDTO && (
+              <p className={styles.errorGlobal}>{errores.huespedDTO}</p>
+            )}
+            
+            {/* Error de lógica (ej. CuitExistente) */}
+            {errores.error && (
+              <p className={styles.errorGlobal}>{errores.error}</p>
+            )}
 
-          {/* Error de red (del catch) */}
-          {errores.global && (
-            <p className={styles.errorGlobal}>{errores.global}</p>
-          )}
-        </div>
-        {/* --- Fin de Errores Globales --- */}
-
+            {/* Error de red (del catch) */}
+            {errores.global && (
+              <p className={styles.errorGlobal}>{errores.global}</p>
+            )}
+          </div>
+        )}
+        {/* --- Fin de Errores Globales --- */}
 
         <div className={styles.buttonContainer}>
           <button type="button" className={`${styles.button} ${styles.cancelButton}`}
@@ -451,7 +532,9 @@ export default function Formulario() {
           </button>
         </div>
       </form>
-        {modalData && (
+
+      {/* Modales */}
+      {modalData && (
         <ActionModal
           titulo={modalData.titulo}
           descripcion={modalData.descripcion}
@@ -465,7 +548,7 @@ export default function Formulario() {
         <ErrorModal
           titulo="Cartel de Error"
           descripcion={modalError}
-          onClose={() => setModalError(null)} // La función para cerrarlo
+          onClose={() => setModalError(null)}
         />
       )}
       {infoModalData && (
