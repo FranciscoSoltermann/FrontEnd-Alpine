@@ -15,14 +15,6 @@ export default function DashboardPage() {
         <div className={styles.dashboardContainer}>
           <h1 className={styles.title}>Menú Principal</h1>
           <div className={styles.grid}>
-            
-            {/* Botón 1: Dar de Alta Huésped */}
-            <Link href="/" className={styles.card}>
-              <FaUserPlus size={40} />
-              <h2>Dar de Alta Huésped</h2>
-              <p>Registrar un nuevo huésped en el sistema.</p>
-            </Link>
-
             {/* Botón 2: Buscar Huésped */}
             <Link href="/buscar" className={styles.card}>
               <FaSearch size={40} />

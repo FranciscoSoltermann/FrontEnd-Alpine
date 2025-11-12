@@ -9,7 +9,6 @@ export default function ActionModal({
   onConfirm, 
   onCancel, 
   confirmText = 'Aceptar', // Texto por defecto para el botón de confirmación
-  cancelText = 'Cancelar'  // Texto por defecto para el botón de cancelación
 }) {
   return (
     <div className={styles.modalOverlay} onClick={onCancel}>
@@ -28,9 +27,6 @@ export default function ActionModal({
         
         {/* Pie con los dos botones */}
         <div className={styles.footer}>
-          <button onClick={onCancel} className={`${styles.button} ${styles.cancelButton}`}>
-            {cancelText} {/* Texto configurable */}
-          </button>
           <button onClick={onConfirm} className={`${styles.button} ${styles.confirmButton}`}>
             {confirmText} {/* Texto configurable */}
           </button>

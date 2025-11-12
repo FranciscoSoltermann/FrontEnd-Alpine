@@ -1,0 +1,235 @@
+/* app/buscar/buscar.module.css */
+:global(body) {
+  background-color: #e6f4e6;
+}
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 1rem auto;
+  padding: 1.5rem;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e0e0e0;
+}
+
+/* 1. Encabezado */
+.header {
+  display: flex;
+  flex-direction: column; /* Cambia a columna para centrar verticalmente */
+  align-items: center; /* Centra horizontalmente */
+  justify-content: center; /* Centra verticalmente */
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  text-align: center; /* Centra el texto */
+  background-color: #f9fff9;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #d3ecd3;
+}
+
+.header h1 {
+  font-size: 2rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.logoContainer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-style: italic;
+  color: #555;
+}
+
+/* 2. Formulario de Búsqueda */
+.formBusqueda {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  align-items: flex-end;
+  background-color: #f9fff9;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #d3ecd3;
+}
+
+.formBusqueda .btnBuscar {
+  grid-column: 2 / 3;
+  justify-self: end;
+  background-color: #007bff;
+  color: white;
+  padding: 0.6rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.formBusqueda .btnBuscar:hover {
+  background-color: #0056b3;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.inputGroup label {
+  margin-bottom: 0.3rem;
+  font-weight: 500;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.inputGroup input,
+.inputGroup select {
+  padding: 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 0.9rem;
+}
+
+/* 3. Tabla de Resultados CON SCROLL COMPACTO */
+.tableContainer {
+  margin-top: 1.5rem;
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 310px;
+  overflow: auto;
+}
+
+.tableContainer table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+  font-size: 0.85rem;
+}
+
+.tableContainer thead {
+  position: sticky;
+  top: 0;
+  background-color: #f9f9f9;
+  z-index: 10;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.tableContainer th,
+.tableContainer td {
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+  white-space: nowrap;
+}
+
+.tableContainer th {
+  background-color: #f9f9f9;
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.tableContainer tr:last-child td {
+  border-bottom: none;
+}
+
+.tableContainer td:last-child {
+  text-align: center;
+}
+
+.tableContainer tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+/* Estilos para la barra de scroll */
+.tableContainer::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.tableContainer::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.tableContainer::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.tableContainer::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Mensaje de error */
+.errorApi {
+  color: #dc3545;
+  text-align: center;
+  margin: 0.8rem;
+  padding: 0.8rem;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* 4. Botones de Acción MÁS COMPACTOS */
+.footerActions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f0f0;
+  gap: 1rem;
+}
+
+.btn {
+  padding: 0.6rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  text-decoration: none;
+  color: white;
+  display: inline-block;
+  text-align: center;
+  flex: 1;
+  max-width: 150px;
+}
+
+.btn:hover {
+  opacity: 0.85;
+}
+
+.btnCancelar {
+  background-color: #dc3545;
+}
+
+.btnCrear {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.btnAceptar {
+  background-color: #28a745;
+}
+
+/* Estado de carga del botón */
+.formBusqueda .btnBuscar:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Para asegurar que los botones se mantengan en una línea */
+.footerActions .btn {
+  white-space: nowrap;
+}
