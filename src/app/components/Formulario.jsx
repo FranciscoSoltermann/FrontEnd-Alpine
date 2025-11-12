@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import ActionModal from './ActionModal';
 import ErrorModal from './ErrorModal';
 import InfoModal from './InfoModal';
+import SuccessModal from './SuccessModal';
 
 // 1. Estado inicial VÁLIDO (fuera del componente)
 const initialState = {
@@ -43,6 +44,7 @@ export default function Formulario() {
   // 2. Hook principal
   const [formData, setFormData] = useState(initialState);
   const [errores, setErrores] = useState({});
+  const [successModal, setSuccessModal] = useState(null);
   const router = useRouter();
   const [modalData, setModalData] = useState(null);
   const [modalError, setModalError] = useState(null);
@@ -129,7 +131,7 @@ export default function Formulario() {
       setErrores(erroresMapeados);
 
       setModalData({
-        titulo: "Cartel de Advertencia",
+        titulo: "Advertencia",
         descripcion: errorData.error || "Se encontraron errores en la carga de datos. Por favor, revise los campos marcados.",
         cancelText: "Cerrar",
         confirmText: "Aceptar",
@@ -137,16 +139,23 @@ export default function Formulario() {
         onConfirm: () => setModalData(null)
       });
 
-      return; // 👈 Detiene la ejecución (no intenta parsear data)
+      return; 
     }
 
     // 🔹 Si la respuesta es OK (200–299)
     const data = await respuesta.json();
-    console.log('Huésped guardado correctamente:', data);
-    alert(`Huésped "${data.nombre} ${data.apellido}" dado de alta correctamente.`);
-
-    setFormData(initialState);
-    router.push('/dashboard');
+      console.log('Huésped guardado correctamente:', data);
+      
+      setSuccessModal({
+        titulo: "Alta Exitosa",
+        descripcion: `Huésped "${data.nombre} ${data.apellido}" dado de alta correctamente.`,
+        onClose: () => {
+          // Acción a tomar DESPUÉS de cerrar el modal de éxito
+          setSuccessModal(null);
+          setFormData(initialState);
+          router.push('/dashboard'); 
+        }
+      });
 
   } catch (error) {
     // 🔹 Este catch solo maneja errores de red (CORS, servidor caído, etc.)
@@ -154,7 +163,7 @@ export default function Formulario() {
     setErrores({ global: 'No se pudo conectar con el servidor. Revisa tu CORS.' });
 
     setModalData({
-      titulo: "Cartel de Error",
+      titulo: "Error",
       descripcion: `Error de conexión: ${error.message}. Verifique que el servidor esté funcionando.`,
       cancelText: "Cerrar",
       confirmText: "Reintentar",
@@ -546,7 +555,7 @@ export default function Formulario() {
       )}
       {modalError && (
         <ErrorModal
-          titulo="Cartel de Error"
+          titulo="Error"
           descripcion={modalError}
           onClose={() => setModalError(null)}
         />
@@ -559,6 +568,14 @@ export default function Formulario() {
           onCancel={infoModalData.onCancel}
           confirmText={infoModalData.confirmText}
           cancelText={infoModalData.cancelText}
+        />
+      )}
+      {successModal && (
+        <SuccessModal
+          titulo={successModal.titulo}
+          descripcion={successModal.descripcion}
+          onClose={successModal.onClose}
+          buttonText="Aceptar"
         />
       )}
     </div>

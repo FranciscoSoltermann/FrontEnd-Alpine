@@ -5,11 +5,13 @@ import { useAuth } from './AuthContext.jsx';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import SuccessModal from './SuccessModal';
 
 export default function LoginForm() {
   const [nombre, setNombre] = useState('');
   const [contrasenia, setContrasenia] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [successModal, setSuccessModal] = useState(null);
   const [error, setError] = useState('');
   const { login } = useAuth();
   const router = useRouter();
@@ -34,8 +36,15 @@ export default function LoginForm() {
 
       const usuario = await respuesta.json();
       login(usuario);
-      alert('¡Bienvenido, ' + usuario.nombre + '!');
-      router.push('/dashboard'); 
+      setSuccessModal({
+        titulo: "¡Bienvenido!",
+        descripcion: `Inicio de sesión exitoso, ${usuario.nombre}.`,
+        onClose: () => {
+          setSuccessModal(null);
+          // La redirección AHORA va aquí:
+          router.push('/dashboard'); 
+        }
+      });
       
     } catch (err) {
       console.error('Error de conexión:', err);
@@ -99,6 +108,14 @@ export default function LoginForm() {
         </Link>
         
       </form>
+      {successModal && (
+        <SuccessModal
+          titulo={successModal.titulo}
+          descripcion={successModal.descripcion}
+          onClose={successModal.onClose}
+          buttonText="Aceptar"
+        />
+      )}
     </div>
   );
 }
