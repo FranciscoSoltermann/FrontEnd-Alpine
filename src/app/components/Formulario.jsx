@@ -77,7 +77,7 @@ export default function Formulario() {
     documento: formData.numeroDocumento,
     fechaNacimiento: formData.fechaNacimiento,
     nacionalidad: formData.nacionalidad,
-    cuit: formData.cuit,
+    cuit: formData.cuit.trim() === '' ? null : formData.cuit,
     telefono: formData.telefono,
     ocupacion: formData.ocupacion,
     email: formData.email,
@@ -90,8 +90,8 @@ export default function Formulario() {
       numero: formData.numero,
       departamento: formData.departamento,
       piso: formData.piso,
-      codigoPostal: formData.codigoPostal,
-    },
+      codigoPostal: formData.codigoPostal
+    }
   };
 
   try {
@@ -120,7 +120,7 @@ export default function Formulario() {
       };
 
       Object.keys(errorData).forEach(key => {
-        if (key === 'error' || key === 'huespedDTO') {
+        if (key === 'error' || key === 'cuitConsistente') {
           erroresMapeados[key] = errorData[key];
         } else {
           const fieldName = fieldMapping[key] || key;
@@ -314,10 +314,15 @@ export default function Formulario() {
               name="cuit"
               value={formData.cuit}
               onChange={handleChange}
-              className={`${styles.inputField} ${hasError(errores, 'cuit') ? styles.errorField : ''}`}
+            className={`${styles.inputField} ${
+                hasError(errores, 'cuit') || hasError(errores, 'cuitConsistente') ? styles.errorField : ''
+              }`}
             />
             {hasError(errores, 'cuit') && (
               <div className={styles.error}>{getErrorMessage(errores, 'cuit')}</div>
+            )}
+            {hasError(errores, 'cuitConsistente') && !hasError(errores, 'cuit') && (
+              <div className={styles.error}>{getErrorMessage(errores, 'cuitConsistente')}</div>
             )}
           </div>
 
@@ -510,25 +515,22 @@ export default function Formulario() {
         </div>
 
         {/* --- Contenedor para Errores Globales --- */}
-        { (errores.huespedDTO || errores.error || errores.global) && (
-          <div className={styles.globalErrorContainer}>
-            {/* Error de la validación @AssertTrue (isCuitConsistente) */}
-            {errores.huespedDTO && (
-              <p className={styles.errorGlobal}>{errores.huespedDTO}</p>
-            )}
-            
-            {/* Error de lógica (ej. CuitExistente) */}
-            {errores.error && (
-              <p className={styles.errorGlobal}>{errores.error}</p>
-            )}
+        { (errores.error || errores.global) && (
+          <div className={styles.globalErrorContainer}>
+    
+           {/* Error de lógica (ej. CuitExistente) */}
+            {errores.error && (
+              <p className={styles.errorGlobal}>{errores.error}</p>
+            )}
 
-            {/* Error de red (del catch) */}
-            {errores.global && (
-              <p className={styles.errorGlobal}>{errores.global}</p>
-            )}
-          </div>
-        )}
-        {/* --- Fin de Errores Globales --- */}
+           {/* Error de red (del catch) */}
+          {errores.global && (
+            <p className={styles.errorGlobal}>{errores.global}</p>
+          )}
+    
+          </div>
+        )}
+        {/* --- Fin de Errores Globales --- */}
 
         <div className={styles.buttonContainer}>
           <button type="button" className={`${styles.button} ${styles.cancelButton}`}
