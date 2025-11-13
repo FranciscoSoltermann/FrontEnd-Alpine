@@ -1,0 +1,62 @@
+/* Estilo para el mensaje de error (el cuadro rojo) */
+.error {
+  /* --- El Cuadro --- */
+  background-color: #fff5f5; /* Rojo muy claro */
+  border: 1px solid #e53e3e;  /* Borde rojo */
+  color: #c53030;             /* Texto rojo oscuro */
+  
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  
+  /* --- Posicionamiento --- */
+  position: absolute;  /* Posición absoluta */
+  top: 100%;           /* Justo debajo (100%) de su padre (.fieldWrapper) */
+  left: 0;
+  margin-top: 8px;     /* Espacio desde el input */
+  z-index: 10;
+  width: 100%;         /* Ocupa el ancho del contenedor */
+
+  /* --- Añadido para el icono --- */
+  display: flex;
+  align-items: center;
+}
+
+/* Icono de advertencia */
+.icon {
+  margin-right: 8px;
+  font-size: 1.1rem;
+  min-width: 1.1rem;
+}
+
+/* El "pico" o "beak" del cuadro (creado con pseudo-elementos) */
+.errorBeak {
+  content: '';
+  position: absolute;
+  bottom: 100%; /* Se posiciona "afuera", arriba del cuadro */
+  left: 20px;   /* Ajusta esto para centrar el "pico" */
+  
+  /* --- Triángulo de BORDE (rojo) --- */
+  width: 0; 
+  height: 0; 
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 7px solid #e53e3e; 
+}
+
+/* Triángulo de RELLENO (para que coincida con el fondo) */
+.errorBeak::after {
+  content: '';
+  position: absolute;
+  width: 0; 
+  height: 0; 
+  
+  /* Posicionado 1px más abajo para que se vea el borde */
+  left: -7px; /* Mitad del ancho del borde */
+  top: 1px;  /* 1px de grosor de borde */
+  
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 7px solid #fff5f5; /* Color de fondo */
+}

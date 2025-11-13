@@ -233,3 +233,15 @@
 .footerActions .btn {
   white-space: nowrap;
 }
+
+.inputError {
+  border: 2px solid #dc3545 !important;
+  background-color: #fff5f5;
+}
+
+.errorMsg {
+  color: #dc3545;
+  font-size: 0.85rem;
+  margin-top: 4px;
+  font-weight: 500;
+}

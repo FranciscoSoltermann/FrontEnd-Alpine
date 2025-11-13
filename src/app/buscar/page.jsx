@@ -21,7 +21,25 @@ export default function BuscarPage() {
 
   const handleBuscar = async (e) => {
     e.preventDefault();
+    const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/;
+    const soloNumeros = /^[0-9]*$/;
     
+    if (apellidos && !soloLetras.test(apellidos)) {
+    console.error("El apellido solo puede contener letras y espacios");
+    return;
+    }
+
+    if (nombre && !soloLetras.test(nombre)) {
+    console.error("El nombre solo puede contener letras y espacios");
+    return;
+    }
+
+    if (numDoc && (!soloNumeros.test(numDoc) || numDoc.length > 8)) {
+  console.error("El número de documento debe contener solo números y tener al menos 8 dígitos.");
+  return;
+}
+  console.log("Documento válido ✅");
+
     setIsLoading(true);
     setErrorApi(null);
     setHasSearched(false);
