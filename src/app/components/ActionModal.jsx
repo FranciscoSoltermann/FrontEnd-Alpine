@@ -1,6 +1,6 @@
 'use client';
 import styles from './ActionModal.module.css';
-// Importamos un ícono de advertencia (Triángulo con !)
+
 import { IoWarningOutline } from 'react-icons/io5';
 
 export default function ActionModal({ 
@@ -8,31 +8,32 @@ export default function ActionModal({
   descripcion, 
   onConfirm, 
   onCancel, 
-  confirmText = 'Aceptar', // Texto por defecto para el botón de confirmación
-  cancelText = 'Cancelar'  // Texto por defecto para el botón de cancelación
+  confirmText = 'Aceptar', 
+  cancelText = 'Cancelar'  
 }) {
   return (
+
     <div className={styles.modalOverlay} onClick={onCancel}>
       <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
         
-        {/* Encabezado Naranja para advertencia */}
+        
         <div className={styles.header}>
-          <IoWarningOutline className={styles.icon} /> {/* Ícono de advertencia */}
+          <IoWarningOutline className={styles.icon} /> 
           <h3>{titulo}</h3>
         </div>
         
-        {/* Cuerpo del mensaje */}
+        
         <div className={styles.body}>
           <p>{descripcion}</p>
         </div>
         
-        {/* Pie con los dos botones */}
+        
         <div className={styles.footer}>
           <button onClick={onCancel} className={`${styles.button} ${styles.cancelButton}`}>
-            {cancelText} {/* Texto configurable */}
+            {cancelText} 
           </button>
           <button onClick={onConfirm} className={`${styles.button} ${styles.confirmButton}`}>
-            {confirmText} {/* Texto configurable */}
+            {confirmText} 
           </button>
         </div>
 

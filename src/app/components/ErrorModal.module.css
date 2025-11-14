@@ -1,4 +1,4 @@
-/* Capa oscura de fondo */
+
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -12,7 +12,6 @@
   z-index: 1000;
 }
 
-/* Contenedor blanco del modal */
 .modalContainer {
   background: white;
   border-radius: 8px;
@@ -22,9 +21,8 @@
   animation: fadeIn 0.3s ease-out;
 }
 
-/* Encabezado rojo */
 .header {
-  background: #e53e3e; /* Rojo */
+  background: #e53e3e; 
   color: white;
   padding: 16px;
   border-top-left-radius: 8px;
@@ -40,26 +38,26 @@
   min-width: 24px;
 }
 
-/* Cuerpo del modal */
+
 .body {
   padding: 24px;
   font-size: 0.95rem;
   color: #333;
 }
 
-/* Pie del modal */
+
 .footer {
   padding: 16px;
   display: flex;
   justify-content: flex-end;
-  background: #f7fafc; /* Gris claro */
+  background: #f7fafc; 
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
 }
 
-/* Botón de cerrar */
+
 .closeButton {
-  background: #e53e3e; /* Rojo */
+  background: #e53e3e; 
   color: white;
   border: none;
   padding: 10px 20px;
@@ -69,7 +67,7 @@
 }
 
 .closeButton:hover {
-  background: #c53030; /* Rojo más oscuro */
+  background: #c53030; 
 }
 
 @keyframes fadeIn {

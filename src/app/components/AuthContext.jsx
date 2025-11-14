@@ -1,4 +1,4 @@
-// src/app/components/AuthContext.jsx
+
 'use client';
 
 import { createContext, useContext, useState, useEffect } from 'react';
@@ -8,7 +8,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
-  // Al cargar, intentar leer el usuario desde localStorage
+  // Al montar el componente, intenta cargar el usuario desde localStorage
   useEffect(() => {
     const storedUser = localStorage.getItem('usuario');
     if (storedUser) {

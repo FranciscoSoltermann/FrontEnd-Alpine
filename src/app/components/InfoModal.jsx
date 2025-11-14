@@ -1,6 +1,6 @@
 'use client';
 import styles from './InfoModal.module.css';
-// Importamos el ícono de "información" (la 'i' en un círculo)
+
 import { IoInformationCircleOutline } from 'react-icons/io5';
 
 export default function InfoModal({ 
@@ -8,11 +8,11 @@ export default function InfoModal({
   descripcion, 
   onConfirm, 
   onCancel, 
-  confirmText = 'Acción 2', // Texto verde
-  cancelText = 'Acción 1'  // Texto rojo
+  confirmText = 'Acción 2', 
+  cancelText = 'Acción 1'  
 }) {
   return (
-    // Capa oscura de fondo
+    
     <div className={styles.modalOverlay} onClick={onCancel}>
       
       {/* Contenedor del modal */}

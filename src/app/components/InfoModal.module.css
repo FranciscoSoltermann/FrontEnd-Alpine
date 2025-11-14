@@ -20,11 +20,11 @@
   animation: fadeIn 0.3s ease-out;
 }
 
-/* --- ESTA ES LA ÚNICA PARTE MODIFICADA --- */
-/* Encabezado Gris/Blanco para Información */
+
+
 .header {
-  background: #f7fafc; /* Gris muy claro (o 'white' si prefieres) */
-  color: #2d3748; /* Color de texto oscuro */
+  background: #f7fafc; 
+  color: #2d3748; 
   padding: 16px;
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
@@ -32,16 +32,16 @@
   align-items: center;
   font-size: 1.1rem;
   font-weight: bold;
-  border-bottom: 1px solid #e2e8f0; /* Línea gris para separar */
+  border-bottom: 1px solid #e2e8f0; 
 }
 
 .icon {
   font-size: 24px;
   margin-right: 12px;
   min-width: 24px;
-  color: #4a5568; /* Color del ícono 'i' */
+  color: #4a5568; 
 }
-/* --- FIN DE LA MODIFICACIÓN --- */
+
 
 .body {
   padding: 24px;
@@ -53,7 +53,7 @@
   padding: 16px;
   display: flex;
   justify-content: flex-end;
-  gap: 10px; /* Espacio entre botones */
+  gap: 10px; 
   background: #f7fafc; 
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
@@ -68,7 +68,7 @@
   min-width: 100px;
 }
 
-/* Acción 1 (Rojo) */
+
 .cancelButton {
   background: #e53e3e; 
   color: white;
@@ -78,7 +78,7 @@
   background: #c53030;
 }
 
-/* Acción 2 (Verde) */
+
 .confirmButton {
   background: #48bb78; 
   color: white;

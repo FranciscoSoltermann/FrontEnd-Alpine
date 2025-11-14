@@ -41,7 +41,6 @@ export default function LoginForm() {
         descripcion: `Inicio de sesión exitoso, ${usuario.nombre}.`,
         onClose: () => {
           setSuccessModal(null);
-          // La redirección AHORA va aquí:
           router.push('/dashboard'); 
         }
       });
@@ -93,10 +92,6 @@ export default function LoginForm() {
           </div>
         </div>
 
-        {/* --- LÍNEA ELIMINADA --- */}
-        {/* <a href="#" className={styles.forgotLink}>Olvidé mi contraseña</a> */}
-
-        {/* El margen se ajusta en el CSS (ver abajo) */}
         {error && <p className={styles.errorMessage}>{error}</p>}
 
         <button type="submit" className={styles.submitButton}>

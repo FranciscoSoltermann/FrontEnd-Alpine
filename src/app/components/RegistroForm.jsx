@@ -1,12 +1,12 @@
 'use client';
 import { useState } from 'react';
-import styles from './LoginForm.module.css'; // Reusamos los estilos del Login
+import styles from './LoginForm.module.css'; 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-// --- 1. IMPORTA LOS ÍCONOS ---
+
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
-/**
+/** 
  * Valida una contraseña según las reglas de negocio.
  * @param {string} password - La contraseña a validar.
  * @returns {string|null} - Devuelve un mensaje de error si es inválida, o null si es válida.
@@ -57,13 +57,13 @@ export default function RegistroForm() {
     e.preventDefault();
     setError('');
 
-    // --- 🔹 VALIDACIÓN FRONT-END ---
+    // --  VALIDACIÓN FRONT-END ---
     const errorPassword = validarContrasenia(contrasenia);
     if (errorPassword) {
       setError(errorPassword);
       return;
     }
-    // --- 🔹 FIN VALIDACIÓN ---
+
 
     const API_URL = 'http://localhost:8080/api/usuarios/registrar'; 
 
@@ -82,7 +82,7 @@ export default function RegistroForm() {
           else if (errorData.contrasenia) setError(errorData.contrasenia);
           else setError(errorData.message || 'Error al registrar. Intente de nuevo.');
         } catch {
-          // Si no es JSON (texto plano)
+    
           const errorMsg = await respuesta.text();
           setError(errorMsg);
         }
@@ -140,7 +140,7 @@ export default function RegistroForm() {
             </span>
           </div>
         </div>
-        {/* --- FIN DEL BLOQUE DE CONTRASEÑA --- */}
+        
 
         {error && <p className={styles.errorMessage}>{error}</p>}
 

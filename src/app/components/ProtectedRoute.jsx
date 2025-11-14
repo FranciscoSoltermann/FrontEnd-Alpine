@@ -1,4 +1,4 @@
-// src/app/components/ProtectedRoute.jsx
+
 'use client';
 
 import { useAuth } from './AuthContext.jsx';
@@ -11,7 +11,7 @@ export default function ProtectedRoute({ children }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Espera a que el AuthContext se hidrate desde localStorage
+    
     if (user === null) {
       // Comprueba si el usuario está en localStorage (por si recargó la pág)
       const storedUser = localStorage.getItem('usuario');

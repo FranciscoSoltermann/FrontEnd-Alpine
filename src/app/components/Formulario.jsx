@@ -7,7 +7,6 @@ import ErrorModal from './ErrorModal';
 import InfoModal from './InfoModal';
 import SuccessModal from './SuccessModal';
 
-// 1. Estado inicial VÁLIDO (fuera del componente)
 const initialState = {
   apellidos: '',
   nombre: '',
@@ -30,18 +29,18 @@ const initialState = {
   piso: '',
 };
 
-// Función helper para determinar si un campo tiene error
+
 const hasError = (errores, fieldName) => {
   return errores[fieldName] !== undefined;
 };
 
-// Función helper para obtener mensaje de error
+
 const getErrorMessage = (errores, fieldName) => {
   return errores[fieldName];
 };
 
 export default function Formulario() {
-  // 2. Hook principal
+  
   const [formData, setFormData] = useState(initialState);
   const [errores, setErrores] = useState({});
   const [successModal, setSuccessModal] = useState(null);
@@ -56,7 +55,7 @@ export default function Formulario() {
       ...prevData,
       [name]: value,
     }));
-    // Limpiar error del campo cuando el usuario empiece a escribir
+
     if (errores[name]) {
       setErrores(prev => {
         const newErrores = { ...prev };
@@ -68,7 +67,7 @@ export default function Formulario() {
 
   const handleSubmit = async (e) => {
   e.preventDefault();
-  setErrores({}); // Limpia errores anteriores
+  setErrores({});
 
   const huesped = {
     nombre: formData.nombre,
@@ -101,7 +100,7 @@ export default function Formulario() {
       body: JSON.stringify(huesped),
     });
 
-    // 🔹 Si la respuesta NO es OK (ej. 400, 409, etc.)
+
     if (!respuesta.ok) {
       const errorData = await respuesta.json();
 
@@ -142,7 +141,6 @@ export default function Formulario() {
       return; 
     }
 
-    // 🔹 Si la respuesta es OK (200–299)
     const data = await respuesta.json();
       console.log('Huésped guardado correctamente:', data);
       
@@ -150,7 +148,7 @@ export default function Formulario() {
         titulo: "Alta Exitosa",
         descripcion: `Huésped "${data.nombre} ${data.apellido}" dado de alta correctamente.`,
         onClose: () => {
-          // Acción a tomar DESPUÉS de cerrar el modal de éxito
+          
           setSuccessModal(null);
           setFormData(initialState);
           router.push('/dashboard'); 
@@ -158,7 +156,7 @@ export default function Formulario() {
       });
 
   } catch (error) {
-    // 🔹 Este catch solo maneja errores de red (CORS, servidor caído, etc.)
+    
     console.error('Error de conexión:', error);
     setErrores({ global: 'No se pudo conectar con el servidor. Revisa tu CORS.' });
 
@@ -206,7 +204,7 @@ export default function Formulario() {
         <h2 className={styles.subtitle}>Datos Personales</h2>
 
         <div className={styles.gridContainer}>
-          {/* Campo Apellidos */}
+         
           <div className={styles.fieldWrapper}>
             <Label htmlFor="apellidos" required>Apellidos</Label>
             <input
@@ -222,7 +220,7 @@ export default function Formulario() {
             )}
           </div>
 
-          {/* Campo Nombre */}
+          
           <div className={styles.fieldWrapper}>
             <Label htmlFor="nombre" required>Nombre</Label>
             <input
@@ -238,7 +236,7 @@ export default function Formulario() {
             )}
           </div>
 
-          {/* Campo Tipo Documento */}
+          
           <div className={styles.fieldWrapper}>
             <Label htmlFor="tipoDocumento" required>Tipo de Documento</Label>
             <select
@@ -259,7 +257,7 @@ export default function Formulario() {
             )}
           </div>
 
-          {/* Campo Número Documento */}
+          
           <div className={styles.fieldWrapper}>
             <Label htmlFor="numeroDocumento" required>Número de Documento</Label>
             <input
@@ -275,7 +273,7 @@ export default function Formulario() {
             )}
           </div>
 
-          {/* Resto de campos... (aplicar el mismo patrón a todos los campos) */}
+          
 
           <div className={styles.fieldWrapper}>
             <Label htmlFor="fechaNacimiento" required>Fecha Nacimiento</Label>
@@ -392,7 +390,7 @@ export default function Formulario() {
         <h2 className={styles.subtitle}>Dirección</h2>
 
         <div className={styles.gridContainer}>
-          {/* Aplicar el mismo patrón a todos los campos de dirección */}
+          
           <div className={styles.fieldWrapper}>
             <Label htmlFor="pais" required>País</Label>
             <input
@@ -514,23 +512,23 @@ export default function Formulario() {
           </div>
         </div>
 
-        {/* --- Contenedor para Errores Globales --- */}
+        
         { (errores.error || errores.global) && (
           <div className={styles.globalErrorContainer}>
     
-           {/* Error de lógica (ej. CuitExistente) */}
+           
             {errores.error && (
               <p className={styles.errorGlobal}>{errores.error}</p>
             )}
 
-           {/* Error de red (del catch) */}
+           
           {errores.global && (
             <p className={styles.errorGlobal}>{errores.global}</p>
           )}
     
           </div>
         )}
-        {/* --- Fin de Errores Globales --- */}
+        
 
         <div className={styles.buttonContainer}>
           <button type="button" className={`${styles.button} ${styles.cancelButton}`}
@@ -544,7 +542,7 @@ export default function Formulario() {
         </div>
       </form>
 
-      {/* Modales */}
+      
       {modalData && (
         <ActionModal
           titulo={modalData.titulo}

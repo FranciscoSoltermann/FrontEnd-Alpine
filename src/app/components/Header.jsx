@@ -1,17 +1,17 @@
 'use client';
 import Link from 'next/link';
 import styles from './Header.module.css';
-import { useAuth } from './AuthContext.jsx'; // Importa el hook
+import { useAuth } from './AuthContext.jsx'; 
 import { useRouter } from 'next/navigation';
-import { FaUser } from 'react-icons/fa'; // Importa el ícono de usuario
+import { FaUser } from 'react-icons/fa'; 
 
 export default function Header() {
-  const { user, logout } = useAuth(); // Obtiene el usuario y la función de logout
+  const { user, logout } = useAuth(); 
   const router = useRouter();
 
   const handleLogout = () => {
-    logout(); // Llama a la función de logout
-    router.push('/login'); // Envía al usuario al login
+    logout(); 
+    router.push('/login'); 
   };
 
   return (
@@ -24,12 +24,7 @@ export default function Header() {
         <ul className={styles.menu}>
           
           {user ? (
-            // --- SI EL USUARIO SÍ EXISTE ---
             <>
-              {/* <li>
-                  <Link href="/">Alta Huésped</Link>  <-- LÍNEA ELIMINADA
-                </li> 
-              */}
               <li>
                 <button onClick={handleLogout} className={styles.logoutButton}>
                   Cerrar Sesión
@@ -37,7 +32,7 @@ export default function Header() {
               </li>
             </>
           ) : (
-            // --- SI EL USUARIO NO EXISTE ---
+            
             <li>
               <Link href="/login" className={styles.iconLink} title="Iniciar Sesión">
                 <FaUser size={24} className={styles.loginIcon} /> 

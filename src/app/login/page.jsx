@@ -1,4 +1,4 @@
-// src/app/login/page.jsx
+
 
 // Importamos el componente de login que acabamos de crear
 import LoginForm from '../components/LoginForm';

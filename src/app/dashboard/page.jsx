@@ -1,15 +1,14 @@
-// src/app/dashboard/page.jsx
 
 import Link from 'next/link';
-import ProtectedRoute from '../components/ProtectedRoute.jsx'; // 1. Importa el guardia
-import styles from '../components/Dashboard.module.css'; // 2. Importa sus propios estilos
+import ProtectedRoute from '../components/ProtectedRoute.jsx'; 
+import styles from '../components/Dashboard.module.css'; 
 
-// 3. Importa los íconos que usaremos
+//  Importa los íconos que usaremos
 import { FaUserPlus, FaSearch, FaPrint, FaUserMinus } from 'react-icons/fa';
 
 export default function DashboardPage() {
   return (
-    // 4. Protegemos la página completa
+    // Protegemos la página completa
     <ProtectedRoute>
       <main className={styles.dashboardBackground}>
         <div className={styles.dashboardContainer}>
