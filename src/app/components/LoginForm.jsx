@@ -29,8 +29,16 @@ export default function LoginForm() {
       });
 
       if (!respuesta.ok) {
-        const errorMsg = await respuesta.text();
-        setError(errorMsg || 'Usuario o contraseña incorrectos');
+        // 1. Leemos la respuesta como OBJETO JSON (no como texto plano)
+        const errorData = await respuesta.json(); 
+        
+        // 2. Extraemos solo el mensaje que está adentro de "global" o "error"
+        // Si errorData.global existe, usa ese. Si no, busca errorData.error.
+        const mensajeLimpio = errorData.global || errorData.error || 'Usuario o contraseña incorrectos';
+
+        // 3. Guardamos el mensaje limpio en el estado
+        setError(mensajeLimpio);
+        
         return;
       }
 

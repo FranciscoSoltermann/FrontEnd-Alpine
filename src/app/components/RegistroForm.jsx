@@ -1,16 +1,13 @@
 'use client';
 import { useState } from 'react';
-import styles from './LoginForm.module.css'; // Reusamos los estilos del Login
+import styles from './LoginForm.module.css';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-// --- 1. IMPORTA LOS ÍCONOS ---
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
-/**
- * Valida una contraseña según las reglas de negocio.
- * @param {string} password - La contraseña a validar.
- * @returns {string|null} - Devuelve un mensaje de error si es inválida, o null si es válida.
- */
+import { useAuth } from './AuthContext.jsx'; // 🔹 Añadido
+import SuccessModal from './SuccessModal';
+
 function validarContrasenia(password) {
   const letras = (password.match(/[a-zA-Z]/g) || []).length;
   const numeros = (password.match(/\d/g) || []);
@@ -23,11 +20,9 @@ function validarContrasenia(password) {
     return "La contraseña debe tener al menos 3 números.";
   }
 
-  if (numeros.length >= 3) {
-    const sonTodosIguales = numInts.every(n => n === numInts[0]);
-    if (sonTodosIguales) {
-      return "Los números no pueden ser todos iguales (ej. '333').";
-    }
+  const sonTodosIguales = numInts.length >= 3 && numInts.every(n => n === numInts[0]);
+  if (sonTodosIguales) {
+    return "Los números no pueden ser todos iguales (ej. '333').";
   }
 
   for (let i = 0; i < numInts.length - 2; i++) {
@@ -51,49 +46,50 @@ export default function RegistroForm() {
   const [contrasenia, setContrasenia] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const { login } = useAuth(); // 🔹 Añadido
   const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    // --- 🔹 VALIDACIÓN FRONT-END ---
     const errorPassword = validarContrasenia(contrasenia);
     if (errorPassword) {
       setError(errorPassword);
       return;
     }
-    // --- 🔹 FIN VALIDACIÓN ---
 
-    const API_URL = 'http://localhost:8080/api/usuarios/registrar'; 
+    const API_URL = 'http://localhost:8080/api/usuarios/registrar';
 
     try {
       const respuesta = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, contrasenia }), 
+        body: JSON.stringify({ nombre, contrasenia }),
       });
 
       if (!respuesta.ok) {
-        // Si el backend devuelve JSON con detalles
-        try {
-          const errorData = await respuesta.json();
-          if (errorData.nombre) setError(errorData.nombre);
-          else if (errorData.contrasenia) setError(errorData.contrasenia);
-          else setError(errorData.message || 'Error al registrar. Intente de nuevo.');
-        } catch {
-          // Si no es JSON (texto plano)
-          const errorMsg = await respuesta.text();
-          setError(errorMsg);
-        }
+        // 🔹 Manejo simplificado de errores
+        const errorData = await respuesta.json();
+        setError(errorData.message || 'Error al registrar. Intente de nuevo.');
         return;
       }
 
-      const usuario = await respuesta.json();
-      console.log('Usuario registrado:', usuario);
-      alert('¡Usuario registrado con éxito! Ahora puedes iniciar sesión.');
-      
-      router.push('/login'); 
+      await respuesta.json();
+
+      // 🔹 AUTO LOGIN DIRECTO después del registro
+      login({ nombre });
+
+      // 🔹 Mostrar el cartel verde (SuccessModal)
+      setSuccessMessage("¡Usuario registrado con éxito!");
+      setShowSuccessModal(true);
+
+      // 🔹 QUITAMOS la redirección automática aquí
+      // para que el usuario pueda ver el cartel verde
 
     } catch (err) {
       console.error('Error de conexión:', err);
@@ -101,11 +97,27 @@ export default function RegistroForm() {
     }
   };
 
+  // 🔹 Al cerrar el modal → ir al dashboard
+  const handleModalClose = () => {
+    setShowSuccessModal(false);
+    router.push('/dashboard'); // 🔹 Ahora sí redirige después de cerrar el modal
+  };
+
   return (
     <div className={styles.loginContainer}>
+
+      {showSuccessModal && (
+        <SuccessModal
+          titulo="Registro exitoso"
+          descripcion={successMessage}
+          onClose={handleModalClose}
+          buttonText="Continuar" // 🔹 Texto modificado
+        />
+      )}
+
       <form onSubmit={handleSubmit}>
         <h1 className={styles.title}>REGISTRARSE</h1>
-        
+
         <div className={styles.fieldWrapper}>
           <label htmlFor="username">Usuario (o E-mail)</label>
           <input
@@ -119,7 +131,6 @@ export default function RegistroForm() {
           />
         </div>
 
-        {/* --- BLOQUE DE CONTRASEÑA --- */}
         <div className={styles.fieldWrapper}>
           <label htmlFor="password">Contraseña</label>
           <div className={styles.passwordWrapper}>
@@ -133,14 +144,13 @@ export default function RegistroForm() {
               required
             />
             <span 
-              onClick={() => setShowPassword(!showPassword)} 
+              onClick={() => setShowPassword(!showPassword)}
               className={styles.eyeIcon}
             >
               {showPassword ? <FaEyeSlash /> : <FaEye />}
             </span>
           </div>
         </div>
-        {/* --- FIN DEL BLOQUE DE CONTRASEÑA --- */}
 
         {error && <p className={styles.errorMessage}>{error}</p>}
 
@@ -151,7 +161,6 @@ export default function RegistroForm() {
         <Link href="/login" className={styles.registerButton}>
           ¿Ya tenés cuenta? Iniciar sesión
         </Link>
-        
       </form>
     </div>
   );

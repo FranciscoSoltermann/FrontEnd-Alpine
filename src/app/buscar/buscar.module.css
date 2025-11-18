@@ -234,14 +234,62 @@
   white-space: nowrap;
 }
 
-.inputError {
-  border: 2px solid #dc3545 !important;
-  background-color: #fff5f5;
-}
-
 .errorMsg {
   color: #dc3545;
   font-size: 0.85rem;
   margin-top: 4px;
   font-weight: 500;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  position: relative; /* <--- ¡MUY IMPORTANTE! */
+}
+
+/* Estilo del input cuando hay error */
+.inputError {
+  border-color: #d32f2f !important;
+  background-color: #fff5f5;
+}
+
+/* LA BURBUJA FLOTANTE (POPUP) */
+.errorPopup {
+  position: absolute;
+  top: 100%; /* Justo debajo del input */
+  left: 0;
+  margin-top: 8px;
+  
+  background-color: #ffe6e6;
+  color: #d32f2f;
+  border: 1px solid #ffcccc;
+  
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  z-index: 20; /* Encima de todo */
+  min-width: 200px;
+}
+
+/* El triángulo ("piquito") hacia arriba */
+.errorPopup::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 15px;
+  border-width: 6px;
+  border-style: solid;
+  border-color: transparent transparent #ffcccc transparent;
+}
+
+.errorPopup::after {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 15px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent #ffe6e6 transparent;
+  margin-left: 1px;
 }
