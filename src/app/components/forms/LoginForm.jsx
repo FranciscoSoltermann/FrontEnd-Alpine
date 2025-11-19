@@ -1,11 +1,11 @@
 'use client';
 import { useState } from 'react';
 import styles from './LoginForm.module.css';
-import { useAuth } from './AuthContext.jsx';
+import { useAuth } from '@/app/context/AuthContext.jsx';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import SuccessModal from './SuccessModal';
+import SuccessModal from '@/app/components/ui/modals/SuccessModal';
 
 export default function LoginForm() {
   const [nombre, setNombre] = useState('');

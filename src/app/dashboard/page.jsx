@@ -1,8 +1,8 @@
 // src/app/dashboard/page.jsx
 
 import Link from 'next/link';
-import ProtectedRoute from '../components/ProtectedRoute.jsx'; // 1. Importa el guardia
-import styles from '../components/Dashboard.module.css'; // 2. Importa sus propios estilos
+import ProtectedRoute from '../components/layout/ProtectedRoute.jsx'; // 1. Importa el guardia
+import styles from './Dashboard.module.css'; // 2. Importa sus propios estilos
 
 // 3. Importa los íconos que usaremos
 import { FaUserPlus, FaSearch, FaPrint, FaUserMinus } from 'react-icons/fa';

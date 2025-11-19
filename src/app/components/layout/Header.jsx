@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import styles from './Header.module.css';
-import { useAuth } from './AuthContext.jsx'; // Importa el hook
+import { useAuth } from '@/app/context/AuthContext.jsx'; // Importa el hook
 import { useRouter } from 'next/navigation';
 import { FaUser } from 'react-icons/fa'; // Importa el ícono de usuario
 

@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import ProtectedRoute from '../components/ProtectedRoute.jsx'; 
+import ProtectedRoute from '../components/layout/ProtectedRoute.jsx';
 import styles from './buscar.module.css'; 
 
 import { buscarHuespedes } from '../../services/api.js';

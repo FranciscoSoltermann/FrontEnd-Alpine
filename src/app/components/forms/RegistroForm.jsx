@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
-import { useAuth } from './AuthContext.jsx'; // 🔹 Añadido
-import SuccessModal from './SuccessModal';
+import { useAuth } from '@/app/context/AuthContext.jsx'; // 🔹 Añadido
+import SuccessModal from '@/app/components/ui/modals/SuccessModal';
 
 function validarContrasenia(password) {
   const letras = (password.match(/[a-zA-Z]/g) || []).length;

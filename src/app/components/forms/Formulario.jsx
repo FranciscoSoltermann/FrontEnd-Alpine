@@ -2,10 +2,10 @@
 import { useState } from 'react';
 import styles from './Formulario.module.css';
 import { useRouter } from 'next/navigation';
-import ActionModal from './ActionModal';
-import ErrorModal from './ErrorModal';
-import InfoModal from './InfoModal';
-import SuccessModal from './SuccessModal';
+import ActionModal from '@/app/components/ui/modals/ActionModal';
+import ErrorModal from '@/app/components/ui/modals/ErrorModal';
+import InfoModal from '@/app/components/ui/modals/InfoModal';
+import SuccessModal from '@/app/components/ui/modals/SuccessModal';
 
 // 1. Estado inicial VÁLIDO (fuera del componente)
 const initialState = {
