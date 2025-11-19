@@ -1,11 +1,11 @@
 'use client';
 import { useState } from 'react';
 import styles from './LoginForm.module.css';
-import { useAuth } from './AuthContext.jsx';
+import { useAuth } from '@/app/context/AuthContext.jsx';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import SuccessModal from './SuccessModal';
+import SuccessModal from '@/app/components/ui/modals/SuccessModal';
 
 export default function LoginForm() {
   const [nombre, setNombre] = useState('');
@@ -29,8 +29,16 @@ export default function LoginForm() {
       });
 
       if (!respuesta.ok) {
-        const errorMsg = await respuesta.text();
-        setError(errorMsg || 'Usuario o contraseña incorrectos');
+        // 1. Leemos la respuesta como OBJETO JSON (no como texto plano)
+        const errorData = await respuesta.json(); 
+        
+        // 2. Extraemos solo el mensaje que está adentro de "global" o "error"
+        // Si errorData.global existe, usa ese. Si no, busca errorData.error.
+        const mensajeLimpio = errorData.global || errorData.error || 'Usuario o contraseña incorrectos';
+
+        // 3. Guardamos el mensaje limpio en el estado
+        setError(mensajeLimpio);
+        
         return;
       }
 

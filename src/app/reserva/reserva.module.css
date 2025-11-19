@@ -1,0 +1,201 @@
+/* app/reservas/reservas.module.css */
+
+/* --- 1. ESTILOS BASE (Copiados de Formulario) --- */
+
+.container {
+    background-color: #ffffff;
+    max-width: 1000px; /* Un poco más ancho para la tabla */
+    margin: 2rem auto;
+    padding: 2.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    font-family: inherit;
+}
+
+.title {
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 2.5rem;
+    text-transform: uppercase; /* Para que diga "RESERVA DE..." en mayúsculas */
+}
+
+/* --- 2. GRILLAS DE FORMULARIO (Adaptadas a Reservas) --- */
+
+.gridTop {
+    display: grid;
+    grid-template-columns: 1fr 1fr 150px; /* Fechas + Botón Buscar */
+    gap: 1.5rem;
+    align-items: end; /* Alinea el botón con los inputs */
+    margin-bottom: 1.5rem;
+}
+
+.gridMiddle {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Tipo y Nro documento */
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.gridBottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr; /* Nombre, Apellido, Teléfono */
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+/* --- 3. INPUTS Y LABELS (Idénticos a Formulario) --- */
+
+.fieldWrapper {
+    display: flex;
+    flex-direction: column;
+    position: relative; /* Para los popups de error si agregas validación */
+}
+
+.fieldWrapper label {
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600; /* Un poco más negrita como en tu foto */
+    color: #2d2d2d;
+}
+
+.input, .select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #cccccc;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    background-color: #fdfdfd;
+    box-sizing: border-box;
+}
+
+.select {
+    background-color: #f9f9f9;
+}
+
+/* --- 4. BOTÓN BUSCAR (Celeste) --- */
+.btnBuscar {
+    background-color: #4dd0e1; /* Cyan/Celeste */
+    color: white;
+    border: none;
+    padding: 0.75rem;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    height: 42px; /* Para alinear altura con inputs */
+    transition: opacity 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btnBuscar:hover {
+    opacity: 0.9;
+}
+
+/* --- 5. TABLA DE DETALLES --- */
+.detailsTable {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #999;
+    margin: 2rem 0;
+    font-size: 0.9rem;
+}
+
+.detailsTable td {
+    border: 1px solid #999;
+    padding: 10px;
+    text-align: center;
+    color: #333;
+}
+
+.labelCell {
+    background-color: #dcedc8; /* Verde clarito para encabezados */
+    font-weight: bold;
+    width: 25%;
+    text-align: center !important;
+}
+
+/* --- 6. BOTONES DEL PIE (Usando tus colores) --- */
+.footerActions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+}
+
+.btnRechazar {
+    /* Usamos tu .cancelButton (#d9534f) */
+    background-color: #d9534f;
+    color: white;
+    border: none;
+    padding: 0.8rem 2.5rem;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.btnAceptar {
+    /* Usamos tu .submitButton (#90ee90) */
+    background-color: #90ee90;
+    color: #222; /* Texto oscuro para contraste */
+    border: none;
+    padding: 0.8rem 2.5rem;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.btnRechazar:hover, .btnAceptar:hover {
+    opacity: 0.85;
+}
+
+/* --- 7. RESPONSIVE --- */
+@media (max-width: 768px) {
+    .gridTop, .gridMiddle, .gridBottom {
+        grid-template-columns: 1fr; /* Todo en 1 columna */
+    }
+
+    .btnBuscar {
+        width: 100%; /* Botón ancho completo */
+    }
+
+    .container {
+        padding: 1.5rem;
+    }
+
+    .footerActions {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .btnRechazar, .btnAceptar {
+        width: 100%;
+    }
+}
+.tableInput {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid transparent; /* Invisible por defecto para que parezca texto */
+    border-radius: 4px;
+    background-color: transparent;
+    font-family: inherit;
+    font-size: 0.95rem;
+    text-align: center;
+}
+
+/* Cuando haces click para editar, se marca el borde */
+.tableInput:focus, .tableInput:hover {
+    border: 1px solid #66afe9;
+    background-color: #fff;
+    outline: none;
+}
+
+.readOnlyText {
+    font-weight: 500;
+    color: #555;
+    background-color: #fdfdfd; /* Un gris muy clarito para indicar que es calculado */
+}

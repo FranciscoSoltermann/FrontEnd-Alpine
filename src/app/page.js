@@ -1,7 +1,7 @@
 // src/app/page.js
 
-import Formulario from './components/Formulario.jsx';
-import ProtectedRoute from './components/ProtectedRoute.jsx'; // 1. IMPORTA EL GUARDIA
+import Formulario from './components/forms/Formulario.jsx';
+import ProtectedRoute from './components/layout/ProtectedRoute.jsx'; // 1. IMPORTA EL GUARDIA
 
 export default function AltaHuespedPage() {
   return (

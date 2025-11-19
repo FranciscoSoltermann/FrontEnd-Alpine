@@ -1,7 +1,7 @@
 // src/app/login/page.jsx
 
 // Importamos el componente de login que acabamos de crear
-import LoginForm from '../components/LoginForm';
+import LoginForm from '../components/forms/LoginForm';
 
 export default function LoginPage() {
   return (

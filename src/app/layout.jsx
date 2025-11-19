@@ -2,8 +2,8 @@
 
 import { Inter } from 'next/font/google';
 import './globals.css';
-import Header from './components/Header.jsx';
-import { AuthProvider } from './components/AuthContext.jsx'; // 1. IMPORTA EL PROVIDER
+import Header from './components/layout/Header.jsx';
+import { AuthProvider } from '@/app/context/AuthContext.jsx'; // 1. IMPORTA EL PROVIDER
 
 const inter = Inter({ subsets: ['latin'] });
 

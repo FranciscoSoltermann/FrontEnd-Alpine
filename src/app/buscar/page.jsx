@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import ProtectedRoute from '../components/ProtectedRoute.jsx'; 
+import ProtectedRoute from '../components/layout/ProtectedRoute.jsx';
 import styles from './buscar.module.css'; 
 
 import { buscarHuespedes } from '../../services/api.js';
@@ -19,27 +19,37 @@ export default function BuscarPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorApi, setErrorApi] = useState(null);
 
+  // NUEVO ESTADO DE ERRORES
+  const [errores, setErrores] = useState({});
+
   const handleBuscar = async (e) => {
     e.preventDefault();
+
+    const nuevosErrores = {};
     const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/;
     const soloNumeros = /^[0-9]*$/;
     
+    // --- VALIDACIONES ---
     if (apellidos && !soloLetras.test(apellidos)) {
-    console.error("El apellido solo puede contener letras y espacios");
-    return;
+      nuevosErrores.apellidos = "El apellido solo puede contener letras y espacios";
     }
 
     if (nombre && !soloLetras.test(nombre)) {
-    console.error("El nombre solo puede contener letras y espacios");
-    return;
+      nuevosErrores.nombre = "El nombre solo puede contener letras y espacios";
     }
 
-    if (numDoc && (!soloNumeros.test(numDoc) || numDoc.length > 8)) {
-  console.error("El número de documento debe contener solo números y tener al menos 8 dígitos.");
-  return;
-}
-  console.log("Documento válido ✅");
+    if (numDoc && (!soloNumeros.test(numDoc) || numDoc.length < 7 || numDoc.length > 8)) {
+      nuevosErrores.numDoc = "El documento debe tener entre 7 y 8 números válidos.";
+    }
 
+    // SI HAY ERRORES, LOS MOSTRAMOS Y FRENAME
+    if (Object.keys(nuevosErrores).length > 0) {
+      setErrores(nuevosErrores);
+      return;
+    }
+
+    // Si todo OK
+    setErrores({});
     setIsLoading(true);
     setErrorApi(null);
     setHasSearched(false);
@@ -58,7 +68,6 @@ export default function BuscarPage() {
 
     } catch (error) {
       setErrorApi(error.message);
-      console.error('Error en la búsqueda:', error);
     } finally {
       setIsLoading(false);
       setHasSearched(true);
@@ -66,10 +75,8 @@ export default function BuscarPage() {
   };
 
   const renderTableBody = () => {
-    if (errorApi) {
-      return null;
-    }
-    
+    if (errorApi) return null;
+
     if (resultados.length === 0) {
       return (
         <tr>
@@ -100,6 +107,8 @@ export default function BuscarPage() {
         </header>
 
         <form className={styles.formBusqueda} onSubmit={handleBuscar}>
+
+          {/* APELLIDO */}
           <div className={styles.inputGroup}>
             <label htmlFor="apellidos">Apellido</label>
             <input 
@@ -107,9 +116,14 @@ export default function BuscarPage() {
               type="text" 
               value={apellidos} 
               onChange={(e) => setApellidos(e.target.value)} 
+              className={errores.apellidos ? styles.inputError : ''}
             />
+            {errores.apellidos && (
+              <div className={styles.errorPopup}>{errores.apellidos}</div>
+            )}
           </div>
-          
+
+          {/* NOMBRE */}
           <div className={styles.inputGroup}>
             <label htmlFor="nombre">Nombre</label>
             <input 
@@ -117,9 +131,14 @@ export default function BuscarPage() {
               type="text" 
               value={nombre} 
               onChange={(e) => setNombre(e.target.value)} 
+              className={errores.nombre ? styles.inputError : ''}
             />
+            {errores.nombre && (
+              <div className={styles.errorPopup}>{errores.nombre}</div>
+            )}
           </div>
-          
+
+          {/* TIPO DE DOC */}
           <div className={styles.inputGroup}>
             <label htmlFor="tipoDoc">Elija el tipo</label>
             <select 
@@ -134,7 +153,8 @@ export default function BuscarPage() {
               <option value="OTRO">OTRO</option>
             </select>
           </div>
-          
+
+          {/* NUMERO DOC */}
           <div className={styles.inputGroup}>
             <label htmlFor="numDoc">Número de Documento</label>
             <input 
@@ -142,9 +162,13 @@ export default function BuscarPage() {
               type="text" 
               value={numDoc} 
               onChange={(e) => setNumDoc(e.target.value)} 
+              className={errores.numDoc ? styles.inputError : ''}
             />
+            {errores.numDoc && (
+              <div className={styles.errorPopup}>{errores.numDoc}</div>
+            )}
           </div>
-          
+
           <button 
             type="submit" 
             className={styles.btnBuscar} 
@@ -154,8 +178,10 @@ export default function BuscarPage() {
           </button>
         </form>
 
+        {/* TABLA DE RESULTADOS */}
         {hasSearched && (
           <div className={styles.tableContainer}>
+
             {errorApi && (
               <div className={styles.errorApi}>
                 Error: {errorApi}

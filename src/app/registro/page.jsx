@@ -1,5 +1,5 @@
 // src/app/registro/page.jsx
-import RegistroForm from '../components/RegistroForm'; // Importamos el nuevo formulario
+import RegistroForm from '../components/forms/RegistroForm'; // Importamos el nuevo formulario
 
 export default function RegistroPage() {
   return (
