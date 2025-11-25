@@ -1,13 +1,36 @@
-// src/app/reservas/page.jsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import ProtectedRoute from '../components/layout/ProtectedRoute.jsx';
+
+// --- IMPORTS REALES (Ajustados a tu estructura de carpetas) ---
+import ProtectedRoute from '../components/layout/ProtectedRoute';
+import ErrorModal from '../components/ui/modals/ErrorModal';
+import SuccessModal from '../components/ui/modals/SuccessModal';
+import ActionModal from '../components/ui/modals/ActionModal';
 import styles from './reserva.module.css';
 
+// Datos Mock (Aquí conectarías tu backend en el futuro)
+const MOCK_HABITACIONES = [
+    { id: 101, numero: '101', tipo: 'Simple', estado: 'Disponible' },
+    { id: 102, numero: '102', tipo: 'Doble', estado: 'Ocupada' },
+    { id: 103, numero: '103', tipo: 'Matrimonial', estado: 'Disponible' },
+    { id: 104, numero: '104', tipo: 'Suite', estado: 'Disponible' },
+    { id: 105, numero: '105', tipo: 'Simple', estado: 'Mantenimiento' },
+    { id: 201, numero: '201', tipo: 'Doble', estado: 'Disponible' },
+];
+
 export default function ReservasPage() {
-    // Estados del formulario principal
+    // --- ESTADOS DE CONTROL DE FLUJO ---
+    const [step, setStep] = useState(1);
+    const [habitacionesDisponibles, setHabitacionesDisponibles] = useState([]);
+
+    // --- ESTADOS DE MODALES ---
+    const [errorModal, setErrorModal] = useState({ isOpen: false, message: '' });
+    const [successModal, setSuccessModal] = useState({ isOpen: false, message: '' });
+    const [actionModal, setActionModal] = useState({ isOpen: false, title: '', message: '' });
+
+    // --- ESTADOS DEL FORMULARIO ---
     const [fechaDesde, setFechaDesde] = useState('');
     const [fechaHasta, setFechaHasta] = useState('');
     const [tipoDoc, setTipoDoc] = useState('DNI');
@@ -16,176 +39,286 @@ export default function ReservasPage() {
     const [apellido, setApellido] = useState('');
     const [telefono, setTelefono] = useState('');
 
-    // --- ESTADOS PARA LA TABLA EDITABLE ---
     const [detalle, setDetalle] = useState({
-        tipoHabitacion: 'Simple', // Valor por defecto
+        habitacionId: null,
+        tipoHabitacion: '',
         fechaIngreso: '',
-        horaIngreso: '12:00',     // Valor por defecto (Check-in)
+        horaIngreso: '12:00', // Default Check-in
         fechaEgreso: '',
-        horaEgreso: '10:00',      // Valor por defecto (Check-out)
+        horaEgreso: '10:00',  // Default Check-out
         telefonoReserva: ''
     });
 
-    // Helper para obtener el nombre del día (Lunes, Martes...)
     const getNombreDia = (fechaString) => {
         if (!fechaString) return '-';
         const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-        // Ajuste por zona horaria para que no de el día anterior
         const date = new Date(fechaString + 'T00:00:00');
         return dias[date.getDay() === 0 ? 6 : date.getDay() - 1];
     };
 
-    // Handler para cambios en la tabla
-    const handleDetalleChange = (e) => {
-        const { name, value } = e.target;
-        setDetalle(prev => ({ ...prev, [name]: value }));
+    // --- HANDLERS DE MODALES ---
+    const showError = (msg) => setErrorModal({ isOpen: true, message: msg });
+    const closeError = () => setErrorModal({ ...errorModal, isOpen: false });
+
+    const showSuccess = (msg) => setSuccessModal({ isOpen: true, message: msg });
+    const closeSuccess = () => {
+        setSuccessModal({ ...successModal, isOpen: false });
+        resetFormularioCompleto();
+    };
+
+    const showConfirmAction = (title, msg) => setActionModal({ isOpen: true, title, message: msg });
+    const closeAction = () => setActionModal({ ...actionModal, isOpen: false });
+
+
+    // --- LÓGICA DE NEGOCIO ---
+
+    const resetFormularioCompleto = () => {
+        setStep(1);
+        setFechaDesde('');
+        setFechaHasta('');
+        setHabitacionesDisponibles([]);
+        setNombre('');
+        setApellido('');
+        setTelefono('');
+        setNumDoc('');
+        setTipoDoc('DNI');
+        setDetalle({
+            habitacionId: null,
+            tipoHabitacion: '',
+            fechaIngreso: '',
+            horaIngreso: '12:00',
+            fechaEgreso: '',
+            horaEgreso: '10:00',
+            telefonoReserva: ''
+        });
+    };
+
+    const handleBuscar = () => {
+        if (!fechaDesde) return showError('Por favor, seleccione una fecha de inicio ("Desde").');
+        if (!fechaHasta) return showError('Por favor, seleccione una fecha de fin ("Hasta").');
+
+        const fDesde = new Date(fechaDesde);
+        const fHasta = new Date(fechaHasta);
+        const hoy = new Date();
+        hoy.setHours(0,0,0,0);
+
+        if (fDesde < hoy) return showError('La fecha de ingreso no puede ser anterior al día de hoy.');
+        if (fDesde > fHasta) return showError('La fecha de ingreso no puede ser posterior a la de salida.');
+
+        setHabitacionesDisponibles(MOCK_HABITACIONES);
+        setDetalle(prev => ({ ...prev, fechaIngreso: fechaDesde, fechaEgreso: fechaHasta }));
+        setStep(2);
+    };
+
+    const handleSeleccionarHabitacion = (habitacion) => {
+        if (habitacion.estado !== 'Disponible') return;
+        setDetalle(prev => ({ ...prev, habitacionId: habitacion.id, tipoHabitacion: habitacion.tipo }));
+        setStep(3);
+    };
+
+    const handlePreConfirmar = () => {
+        if (!nombre || !apellido || !numDoc) {
+            return showError('Por favor complete todos los datos del pasajero (Nombre, Apellido y Documento).');
+        }
+
+        showConfirmAction(
+            'Confirmar Reserva',
+            `¿Está seguro que desea reservar la habitación ${detalle.tipoHabitacion} para ${nombre} ${apellido}?`
+        );
+    };
+
+    const handleConfirmarReal = () => {
+        closeAction();
+        // Simulación de éxito
+        setTimeout(() => {
+            showSuccess('La reserva se ha registrado correctamente en el sistema.');
+        }, 500);
     };
 
     return (
         <ProtectedRoute>
-            <div className={styles.container}>
 
-                <h1 className={styles.title}>RESERVA DE HABITACIONES</h1>
+            {/* --- MODALES REALES CON TUS PROPS --- */}
+
+            {errorModal.isOpen && (
+                <ErrorModal
+                    titulo="Error en la solicitud"
+                    descripcion={errorModal.message}
+                    onClose={closeError}
+                />
+            )}
+
+            {successModal.isOpen && (
+                <SuccessModal
+                    titulo="¡Operación Exitosa!"
+                    descripcion={successModal.message}
+                    onClose={closeSuccess}
+                />
+            )}
+
+            {actionModal.isOpen && (
+                <ActionModal
+                    titulo={actionModal.title}
+                    descripcion={actionModal.message}
+                    onCancel={closeAction}
+                    onConfirm={handleConfirmarReal}
+                    confirmText="Confirmar"
+                />
+            )}
+
+            <div className={styles.container}>
+                <h1 className={styles.title}>
+                    {step === 1 && "Buscar Disponibilidad"}
+                    {step === 2 && "Seleccionar Habitación"}
+                    {step === 3 && "Confirmar Reserva"}
+                </h1>
 
                 <div className={styles.formContainer}>
 
-                    {/* --- FORMULARIO SUPERIOR (BUSQUEDA) --- */}
+                    {/* --- PASO 1: FECHAS --- */}
                     <div className={styles.gridTop}>
                         <div className={styles.fieldWrapper}>
                             <label>Desde Fecha</label>
-                            <input type="date" className={styles.input} value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
+                            <input
+                                type="date"
+                                className={styles.input}
+                                value={fechaDesde}
+                                onChange={(e) => setFechaDesde(e.target.value)}
+                                disabled={step > 1}
+                            />
                         </div>
                         <div className={styles.fieldWrapper}>
                             <label>Hasta Fecha</label>
-                            <input type="date" className={styles.input} value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
+                            <input
+                                type="date"
+                                className={styles.input}
+                                value={fechaHasta}
+                                onChange={(e) => setFechaHasta(e.target.value)}
+                                disabled={step > 1}
+                            />
                         </div>
-                        <button className={styles.btnBuscar}>BUSCAR</button>
-                    </div>
-
-                    <div className={styles.gridMiddle}>
-                        <div className={styles.fieldWrapper}>
-                            <label>Elija el tipo de documento</label>
-                            <select className={styles.select} value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)}>
-                                <option value="DNI">DNI</option>
-                                <option value="PASAPORTE">PASAPORTE</option>
-                            </select>
-                        </div>
-                        <div className={styles.fieldWrapper}>
-                            <label>Nro de documento</label>
-                            <input type="text" className={styles.input} value={numDoc} onChange={(e) => setNumDoc(e.target.value)} />
-                        </div>
-                    </div>
-
-                    <div className={styles.gridBottom}>
-                        <div className={styles.fieldWrapper}>
-                            <label>Nombre</label>
-                            <input type="text" className={styles.input} value={nombre} onChange={(e) => setNombre(e.target.value)} />
-                        </div>
-                        <div className={styles.fieldWrapper}>
-                            <label>Apellido</label>
-                            <input type="text" className={styles.input} value={apellido} onChange={(e) => setApellido(e.target.value)} />
-                        </div>
-                        <div className={styles.fieldWrapper}>
-                            <label>Teléfono</label>
-                            <input type="text" className={styles.input} value={telefono} onChange={(e) => setTelefono(e.target.value)} />
-                        </div>
-                    </div>
-
-                    {/* --- TABLA DE DETALLE EDITABLE --- */}
-                    <table className={styles.detailsTable}>
-                        <tbody>
-                        {/* FILA 1: Tipo Habitación */}
-                        <tr>
-                            <td className={styles.labelCell}>Tipo habitación</td>
-                            <td colSpan="3">
-                                <select
-                                    name="tipoHabitacion"
-                                    className={styles.tableInput}
-                                    value={detalle.tipoHabitacion}
-                                    onChange={handleDetalleChange}
+                        <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                            {step === 1 ? (
+                                <button className={styles.btnBuscar} onClick={handleBuscar}>BUSCAR</button>
+                            ) : (
+                                <button
+                                    className={styles.btnBuscar}
+                                    onClick={() => setStep(1)}
+                                    style={{ background: '#fff', border: '1px solid #4dd0e1', color: '#4dd0e1' }}
                                 >
-                                    <option value="Simple">Simple</option>
-                                    <option value="Doble">Doble</option>
-                                    <option value="Matrimonial">Matrimonial</option>
-                                    <option value="Suite">Suite</option>
-                                </select>
-                            </td>
-                        </tr>
-
-                        {/* FILA 2: Ingreso */}
-                        <tr>
-                            <td className={styles.labelCell}>Ingreso</td>
-                            {/* Nombre del día calculado automático */}
-                            <td className={styles.readOnlyText}>{getNombreDia(detalle.fechaIngreso)}</td>
-                            <td>
-                                <input
-                                    type="date"
-                                    name="fechaIngreso"
-                                    className={styles.tableInput}
-                                    value={detalle.fechaIngreso}
-                                    onChange={handleDetalleChange}
-                                />
-                            </td>
-                            <td>
-                                <input
-                                    type="time"
-                                    name="horaIngreso"
-                                    className={styles.tableInput}
-                                    value={detalle.horaIngreso}
-                                    onChange={handleDetalleChange}
-                                />
-                            </td>
-                        </tr>
-
-                        {/* FILA 3: Egreso */}
-                        <tr>
-                            <td className={styles.labelCell}>Egreso</td>
-                            {/* Nombre del día calculado automático */}
-                            <td className={styles.readOnlyText}>{getNombreDia(detalle.fechaEgreso)}</td>
-                            <td>
-                                <input
-                                    type="date"
-                                    name="fechaEgreso"
-                                    className={styles.tableInput}
-                                    value={detalle.fechaEgreso}
-                                    onChange={handleDetalleChange}
-                                />
-                            </td>
-                            <td>
-                                <input
-                                    type="time"
-                                    name="horaEgreso"
-                                    className={styles.tableInput}
-                                    value={detalle.horaEgreso}
-                                    onChange={handleDetalleChange}
-                                />
-                            </td>
-                        </tr>
-
-                        {/* FILA 4: Teléfono (Editable también) */}
-                        <tr>
-                            <td className={styles.labelCell}>Teléfono</td>
-                            <td colSpan="3">
-                                <input
-                                    type="text"
-                                    name="telefonoReserva"
-                                    className={styles.tableInput}
-                                    value={detalle.telefonoReserva}
-                                    onChange={handleDetalleChange}
-                                    placeholder="Teléfono de contacto"
-                                />
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-
-                    <div className={styles.footerActions}>
-                        <Link href="/dashboard">
-                            <button className={styles.btnRechazar}>RECHAZAR</button>
-                        </Link>
-                        <button className={styles.btnAceptar}>ACEPTAR</button>
+                                    CAMBIAR
+                                </button>
+                            )}
+                        </div>
                     </div>
 
+                    {/* --- PASO 2: GRILLA HABITACIONES --- */}
+                    {step === 2 && (
+                        <div className={styles.roomsGrid}>
+                            {habitacionesDisponibles.map((hab) => (
+                                <div
+                                    key={hab.id}
+                                    className={`${styles.roomCard} ${hab.estado !== 'Disponible' ? styles.occupied : ''}`}
+                                    onClick={() => handleSeleccionarHabitacion(hab)}
+                                >
+                                    <strong className={styles.roomNumber}>Hab. {hab.numero}</strong>
+                                    <span className={styles.roomType}>{hab.tipo}</span>
+                                    <br/>
+                                    <span className={`${styles.statusBadge} ${hab.estado === 'Disponible' ? styles.available : styles.occupied}`}>
+                                        {hab.estado}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* --- PASO 3: DETALLES PASAJERO --- */}
+                    {step === 3 && (
+                        <div style={{animation: 'fadeIn 0.5s'}}>
+                            <button onClick={() => setStep(2)} className={styles.btnBack} style={{marginBottom:'15px'}}>
+                                ← Volver a selección
+                            </button>
+
+                            <div className={styles.gridMiddle}>
+                                <div className={styles.fieldWrapper}>
+                                    <label>Tipo Doc</label>
+                                    <select className={styles.select} value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)}>
+                                        <option value="DNI">DNI</option>
+                                        <option value="PASAPORTE">PASAPORTE</option>
+                                    </select>
+                                </div>
+                                <div className={styles.fieldWrapper}>
+                                    <label>Nro Doc</label>
+                                    <input type="text" className={styles.input} value={numDoc} onChange={(e) => setNumDoc(e.target.value)} />
+                                </div>
+                            </div>
+
+                            <div className={styles.gridBottom}>
+                                <div className={styles.fieldWrapper}>
+                                    <label>Nombre</label>
+                                    <input type="text" className={styles.input} value={nombre} onChange={(e) => setNombre(e.target.value)} />
+                                </div>
+                                <div className={styles.fieldWrapper}>
+                                    <label>Apellido</label>
+                                    <input type="text" className={styles.input} value={apellido} onChange={(e) => setApellido(e.target.value)} />
+                                </div>
+                                <div className={styles.fieldWrapper}>
+                                    <label>Teléfono</label>
+                                    <input type="text" className={styles.input} value={telefono} onChange={(e) => setTelefono(e.target.value)} />
+                                </div>
+                            </div>
+
+                            <table className={styles.detailsTable}>
+                                <tbody>
+                                <tr>
+                                    <td className={styles.labelCell}>Habitación</td>
+                                    <td colSpan="3" style={{textAlign:'left', paddingLeft:'15px'}}>
+                                        <strong>{detalle.tipoHabitacion}</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={styles.labelCell}>Ingreso</td>
+                                    <td className={styles.readOnlyText}>{getNombreDia(detalle.fechaIngreso)}</td>
+                                    <td>
+                                        <input type="date" className={styles.tableInput} value={detalle.fechaIngreso} disabled />
+                                    </td>
+                                    <td>
+                                        <input
+                                            type="time"
+                                            className={styles.tableInput}
+                                            value={detalle.horaIngreso}
+                                            onChange={e => setDetalle({...detalle, horaIngreso: e.target.value})}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className={styles.labelCell}>Egreso</td>
+                                    <td className={styles.readOnlyText}>{getNombreDia(detalle.fechaEgreso)}</td>
+                                    <td>
+                                        <input type="date" className={styles.tableInput} value={detalle.fechaEgreso} disabled />
+                                    </td>
+                                    <td>
+                                        <input
+                                            type="time"
+                                            className={styles.tableInput}
+                                            value={detalle.horaEgreso}
+                                            onChange={e => setDetalle({...detalle, horaEgreso: e.target.value})}
+                                        />
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+
+                            <div className={styles.footerActions}>
+                                <Link href="/dashboard">
+                                    <button className={styles.btnRechazar}>CANCELAR</button>
+                                </Link>
+                                <button className={styles.btnAceptar} onClick={handlePreConfirmar}>
+                                    CONFIRMAR RESERVA
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </ProtectedRoute>

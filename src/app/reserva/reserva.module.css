@@ -199,3 +199,83 @@
     color: #555;
     background-color: #fdfdfd; /* Un gris muy clarito para indicar que es calculado */
 }
+
+
+.roomsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+    animation: fadeIn 0.5s ease;
+}
+
+.roomCard {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.roomCard:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.roomNumber {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #333;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.roomType {
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+/* Estados de la habitación */
+.statusBadge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.available {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.occupied {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Botón para volver atrás */
+.btnBack {
+    background-color: transparent;
+    border: 1px solid #999;
+    color: #555;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 1rem;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
