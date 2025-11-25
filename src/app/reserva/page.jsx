@@ -3,36 +3,30 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
-// --- IMPORTS REALES (Ajustados a tu estructura de carpetas) ---
+// --- IMPORTS REALES ---
 import ProtectedRoute from '../components/layout/ProtectedRoute';
 import ErrorModal from '../components/ui/modals/ErrorModal';
 import SuccessModal from '../components/ui/modals/SuccessModal';
 import ActionModal from '../components/ui/modals/ActionModal';
 import styles from './reserva.module.css';
 
-// Datos Mock (Aquí conectarías tu backend en el futuro)
-const MOCK_HABITACIONES = [
-    { id: 101, numero: '101', tipo: 'Simple', estado: 'Disponible' },
-    { id: 102, numero: '102', tipo: 'Doble', estado: 'Ocupada' },
-    { id: 103, numero: '103', tipo: 'Matrimonial', estado: 'Disponible' },
-    { id: 104, numero: '104', tipo: 'Suite', estado: 'Disponible' },
-    { id: 105, numero: '105', tipo: 'Simple', estado: 'Mantenimiento' },
-    { id: 201, numero: '201', tipo: 'Doble', estado: 'Disponible' },
-];
+// 1. CORRECCIÓN: Agregamos '/api' a la URL base
+const API_URL = "http://localhost:8080/api";
 
 export default function ReservasPage() {
-    // --- ESTADOS DE CONTROL DE FLUJO ---
+
+    // --- ESTADOS ---
     const [step, setStep] = useState(1);
     const [habitacionesDisponibles, setHabitacionesDisponibles] = useState([]);
+    const [loading, setLoading] = useState(false); // Agregamos estado de carga
 
-    // --- ESTADOS DE MODALES ---
     const [errorModal, setErrorModal] = useState({ isOpen: false, message: '' });
     const [successModal, setSuccessModal] = useState({ isOpen: false, message: '' });
     const [actionModal, setActionModal] = useState({ isOpen: false, title: '', message: '' });
 
-    // --- ESTADOS DEL FORMULARIO ---
     const [fechaDesde, setFechaDesde] = useState('');
     const [fechaHasta, setFechaHasta] = useState('');
+
     const [tipoDoc, setTipoDoc] = useState('DNI');
     const [numDoc, setNumDoc] = useState('');
     const [nombre, setNombre] = useState('');
@@ -43,20 +37,148 @@ export default function ReservasPage() {
         habitacionId: null,
         tipoHabitacion: '',
         fechaIngreso: '',
-        horaIngreso: '12:00', // Default Check-in
+        horaIngreso: '12:00',
         fechaEgreso: '',
-        horaEgreso: '10:00',  // Default Check-out
-        telefonoReserva: ''
+        horaEgreso: '10:00'
     });
 
-    const getNombreDia = (fechaString) => {
-        if (!fechaString) return '-';
-        const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-        const date = new Date(fechaString + 'T00:00:00');
-        return dias[date.getDay() === 0 ? 6 : date.getDay() - 1];
+    // ======================
+    //   BUSCAR DISPONIBLES (CORREGIDO)
+    // ======================
+    const handleBuscar = async () => {
+
+        if (!fechaDesde) return showError('Por favor seleccione la fecha "Desde".');
+        if (!fechaHasta) return showError('Por favor seleccione la fecha "Hasta".');
+
+        const fDesde = new Date(fechaDesde);
+        const fHasta = new Date(fechaHasta);
+        const today = new Date(); today.setHours(0,0,0,0);
+        // Ajuste simple de zona horaria para evitar errores de "ayer"
+        const fDesdeAjustada = new Date(fDesde.getTime() + fDesde.getTimezoneOffset() * 60000);
+
+        if (fDesdeAjustada < today) return showError('La fecha de ingreso no puede ser anterior a hoy.');
+        if (fDesde > fHasta) return showError('La fecha de ingreso no puede ser posterior a la fecha de salida.');
+
+        setLoading(true);
+
+        try {
+            // 2. CORRECCIÓN: URL correcta '/habitaciones/estado'
+            const res = await fetch(
+                `${API_URL}/habitaciones/estado?desde=${fechaDesde}&hasta=${fechaHasta}`
+            );
+
+            if (!res.ok) throw new Error("Error buscando disponibilidad");
+
+            const dataBackend = await res.json();
+
+            // 3. CORRECCIÓN: Transformación de datos (Grilla -> Estado Simple)
+            // El backend devuelve { estadosPorDia: [...] }, el frontend necesita { estado: 'Disponible' }
+            const habitacionesMapeadas = dataBackend.map(hab => {
+                // Si CUALQUIER día del rango está ocupado, la habitación entera se marca ocupada
+                const tieneDiasOcupados = hab.estadosPorDia.some(dia =>
+                    dia.estado !== 'DISPONIBLE'
+                );
+
+                return {
+                    id: hab.idHabitacion,      // Mapeamos idHabitacion -> id
+                    numero: hab.numero,
+                    tipo: hab.tipo,
+                    estado: tieneDiasOcupados ? 'Ocupada' : 'Disponible'
+                };
+            });
+
+            setHabitacionesDisponibles(habitacionesMapeadas);
+            setDetalle(prev => ({
+                ...prev,
+                fechaIngreso: fechaDesde,
+                fechaEgreso: fechaHasta
+            }));
+
+            setStep(2);
+
+        } catch (e) {
+            console.error(e);
+            showError("No se pudo conectar con el servidor. Verifique que el Backend esté corriendo.");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    // --- HANDLERS DE MODALES ---
+    // ======================
+    //   SELECCIONAR HABITACIÓN
+    // ======================
+    const handleSeleccionarHabitacion = (hab) => {
+        if (hab.estado !== 'Disponible') return;
+
+        setDetalle(prev => ({
+            ...prev,
+            habitacionId: hab.id,
+            // Limpiamos el nombre (Ej: "DobleEstandar" -> "Doble Estandar")
+            tipoHabitacion: hab.tipo.replace(/([A-Z])/g, ' $1').trim()
+        }));
+
+        setStep(3);
+    };
+
+    // ======================
+    //   CONFIRMAR RESERVA (modal)
+    // ======================
+    const handlePreConfirmar = () => {
+        if (!nombre || !apellido || !numDoc) {
+            return showError("Complete los datos del pasajero.");
+        }
+
+        showConfirmAction(
+            "Confirmar Reserva",
+            `¿Desea confirmar la reserva de la habitación ${detalle.tipoHabitacion}?`
+        );
+    };
+
+    // ======================
+    //   ENVIAR RESERVA AL BACKEND
+    // ======================
+    const handleConfirmarReal = async () => {
+
+        closeAction();
+
+        // Armamos el objeto tal cual lo espera tu backend (ReservaDTO posiblemente)
+        const reservaDTO = {
+            huesped: { // Asumiendo estructura compleja o simple según tu DTO
+                tipoDocumento: tipoDoc,
+                documento: numDoc,
+                nombre,
+                apellido,
+                telefono
+            },
+            habitacionId: detalle.habitacionId,
+            fechaInicio: detalle.fechaIngreso,
+            fechaFin: detalle.fechaEgreso
+        };
+
+        try {
+            // Nota: Asegúrate de tener este endpoint '/reservas' creado en tu backend
+            const res = await fetch(`${API_URL}/reservas`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(reservaDTO)
+            });
+
+            if (!res.ok) {
+                // Intentamos leer el mensaje de error del backend si existe
+                const errorBody = await res.json().catch(() => null);
+                return showError(errorBody?.mensaje || "No se pudo registrar la reserva.");
+            }
+
+            showSuccess("La reserva fue registrada con éxito.");
+
+        } catch (e) {
+            showError("Error de conexión con el servidor.");
+        }
+    };
+
+    // ======================
+    //   MODALES Y UTILS
+    // ======================
     const showError = (msg) => setErrorModal({ isOpen: true, message: msg });
     const closeError = () => setErrorModal({ ...errorModal, isOpen: false });
 
@@ -68,9 +190,6 @@ export default function ReservasPage() {
 
     const showConfirmAction = (title, msg) => setActionModal({ isOpen: true, title, message: msg });
     const closeAction = () => setActionModal({ ...actionModal, isOpen: false });
-
-
-    // --- LÓGICA DE NEGOCIO ---
 
     const resetFormularioCompleto = () => {
         setStep(1);
@@ -88,83 +207,27 @@ export default function ReservasPage() {
             fechaIngreso: '',
             horaIngreso: '12:00',
             fechaEgreso: '',
-            horaEgreso: '10:00',
-            telefonoReserva: ''
+            horaEgreso: '10:00'
         });
     };
 
-    const handleBuscar = () => {
-        if (!fechaDesde) return showError('Por favor, seleccione una fecha de inicio ("Desde").');
-        if (!fechaHasta) return showError('Por favor, seleccione una fecha de fin ("Hasta").');
-
-        const fDesde = new Date(fechaDesde);
-        const fHasta = new Date(fechaHasta);
-        const hoy = new Date();
-        hoy.setHours(0,0,0,0);
-
-        if (fDesde < hoy) return showError('La fecha de ingreso no puede ser anterior al día de hoy.');
-        if (fDesde > fHasta) return showError('La fecha de ingreso no puede ser posterior a la de salida.');
-
-        setHabitacionesDisponibles(MOCK_HABITACIONES);
-        setDetalle(prev => ({ ...prev, fechaIngreso: fechaDesde, fechaEgreso: fechaHasta }));
-        setStep(2);
+    const getNombreDia = (fechaString) => {
+        if (!fechaString) return "-";
+        const [year, month, day] = fechaString.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        const dias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+        return dias[date.getDay()];
     };
 
-    const handleSeleccionarHabitacion = (habitacion) => {
-        if (habitacion.estado !== 'Disponible') return;
-        setDetalle(prev => ({ ...prev, habitacionId: habitacion.id, tipoHabitacion: habitacion.tipo }));
-        setStep(3);
-    };
-
-    const handlePreConfirmar = () => {
-        if (!nombre || !apellido || !numDoc) {
-            return showError('Por favor complete todos los datos del pasajero (Nombre, Apellido y Documento).');
-        }
-
-        showConfirmAction(
-            'Confirmar Reserva',
-            `¿Está seguro que desea reservar la habitación ${detalle.tipoHabitacion} para ${nombre} ${apellido}?`
-        );
-    };
-
-    const handleConfirmarReal = () => {
-        closeAction();
-        // Simulación de éxito
-        setTimeout(() => {
-            showSuccess('La reserva se ha registrado correctamente en el sistema.');
-        }, 500);
-    };
+    // ======================
+    //   RENDER
+    // ======================
 
     return (
         <ProtectedRoute>
-
-            {/* --- MODALES REALES CON TUS PROPS --- */}
-
-            {errorModal.isOpen && (
-                <ErrorModal
-                    titulo="Error en la solicitud"
-                    descripcion={errorModal.message}
-                    onClose={closeError}
-                />
-            )}
-
-            {successModal.isOpen && (
-                <SuccessModal
-                    titulo="¡Operación Exitosa!"
-                    descripcion={successModal.message}
-                    onClose={closeSuccess}
-                />
-            )}
-
-            {actionModal.isOpen && (
-                <ActionModal
-                    titulo={actionModal.title}
-                    descripcion={actionModal.message}
-                    onCancel={closeAction}
-                    onConfirm={handleConfirmarReal}
-                    confirmText="Confirmar"
-                />
-            )}
+            {errorModal.isOpen && <ErrorModal titulo="Error" descripcion={errorModal.message} onClose={closeError} />}
+            {successModal.isOpen && <SuccessModal titulo="Éxito" descripcion={successModal.message} onClose={closeSuccess} />}
+            {actionModal.isOpen && <ActionModal titulo={actionModal.title} descripcion={actionModal.message} onCancel={closeAction} onConfirm={handleConfirmarReal} />}
 
             <div className={styles.container}>
                 <h1 className={styles.title}>
@@ -175,36 +238,34 @@ export default function ReservasPage() {
 
                 <div className={styles.formContainer}>
 
-                    {/* --- PASO 1: FECHAS --- */}
+                    {/* --- PASO 1 --- */}
                     <div className={styles.gridTop}>
                         <div className={styles.fieldWrapper}>
                             <label>Desde Fecha</label>
-                            <input
-                                type="date"
-                                className={styles.input}
-                                value={fechaDesde}
-                                onChange={(e) => setFechaDesde(e.target.value)}
-                                disabled={step > 1}
-                            />
+                            <input type="date" className={styles.input} value={fechaDesde}
+                                   onChange={(e) => setFechaDesde(e.target.value)} disabled={step > 1 || loading} />
                         </div>
+
                         <div className={styles.fieldWrapper}>
                             <label>Hasta Fecha</label>
-                            <input
-                                type="date"
-                                className={styles.input}
-                                value={fechaHasta}
-                                onChange={(e) => setFechaHasta(e.target.value)}
-                                disabled={step > 1}
-                            />
+                            <input type="date" className={styles.input} value={fechaHasta}
+                                   onChange={(e) => setFechaHasta(e.target.value)} disabled={step > 1 || loading} />
                         </div>
+
                         <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                             {step === 1 ? (
-                                <button className={styles.btnBuscar} onClick={handleBuscar}>BUSCAR</button>
+                                <button
+                                    className={styles.btnBuscar}
+                                    onClick={handleBuscar}
+                                    disabled={loading}
+                                >
+                                    {loading ? "BUSCANDO..." : "BUSCAR"}
+                                </button>
                             ) : (
                                 <button
                                     className={styles.btnBuscar}
                                     onClick={() => setStep(1)}
-                                    style={{ background: '#fff', border: '1px solid #4dd0e1', color: '#4dd0e1' }}
+                                    style={{ background: "#fff", color: "#4dd0e1", border: "1px solid #4dd0e1" }}
                                 >
                                     CAMBIAR
                                 </button>
@@ -212,59 +273,62 @@ export default function ReservasPage() {
                         </div>
                     </div>
 
-                    {/* --- PASO 2: GRILLA HABITACIONES --- */}
+                    {/* --- PASO 2 --- */}
                     {step === 2 && (
                         <div className={styles.roomsGrid}>
-                            {habitacionesDisponibles.map((hab) => (
-                                <div
-                                    key={hab.id}
-                                    className={`${styles.roomCard} ${hab.estado !== 'Disponible' ? styles.occupied : ''}`}
-                                    onClick={() => handleSeleccionarHabitacion(hab)}
-                                >
-                                    <strong className={styles.roomNumber}>Hab. {hab.numero}</strong>
-                                    <span className={styles.roomType}>{hab.tipo}</span>
-                                    <br/>
-                                    <span className={`${styles.statusBadge} ${hab.estado === 'Disponible' ? styles.available : styles.occupied}`}>
-                                        {hab.estado}
-                                    </span>
-                                </div>
-                            ))}
+                            {habitacionesDisponibles.length === 0 ? (
+                                <p style={{gridColumn: '1/-1', textAlign:'center', padding: '20px'}}>
+                                    No hay habitaciones disponibles o no se encontraron datos.
+                                </p>
+                            ) : (
+                                habitacionesDisponibles.map(hab => (
+                                    <div key={hab.id}
+                                         className={`${styles.roomCard} ${hab.estado !== 'Disponible' ? styles.occupied : ''}`}
+                                         onClick={() => handleSeleccionarHabitacion(hab)}>
+                                        <strong className={styles.roomNumber}>Hab. {hab.numero}</strong>
+                                        <span className={styles.roomType}>{hab.tipo}</span><br/>
+                                        <span className={`${styles.statusBadge} ${
+                                            hab.estado === "Disponible" ? styles.available : styles.occupied}`}>
+                                            {hab.estado}
+                                        </span>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     )}
 
-                    {/* --- PASO 3: DETALLES PASAJERO --- */}
+                    {/* --- PASO 3 --- */}
                     {step === 3 && (
-                        <div style={{animation: 'fadeIn 0.5s'}}>
-                            <button onClick={() => setStep(2)} className={styles.btnBack} style={{marginBottom:'15px'}}>
-                                ← Volver a selección
-                            </button>
+                        <div>
+                            <button className={styles.btnBack} onClick={() => setStep(2)}>← Volver</button>
 
                             <div className={styles.gridMiddle}>
                                 <div className={styles.fieldWrapper}>
                                     <label>Tipo Doc</label>
-                                    <select className={styles.select} value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)}>
+                                    <select className={styles.select} value={tipoDoc}
+                                            onChange={(e) => setTipoDoc(e.target.value)}>
                                         <option value="DNI">DNI</option>
                                         <option value="PASAPORTE">PASAPORTE</option>
                                     </select>
                                 </div>
                                 <div className={styles.fieldWrapper}>
                                     <label>Nro Doc</label>
-                                    <input type="text" className={styles.input} value={numDoc} onChange={(e) => setNumDoc(e.target.value)} />
+                                    <input className={styles.input} value={numDoc} onChange={(e) => setNumDoc(e.target.value)} />
                                 </div>
                             </div>
 
                             <div className={styles.gridBottom}>
                                 <div className={styles.fieldWrapper}>
                                     <label>Nombre</label>
-                                    <input type="text" className={styles.input} value={nombre} onChange={(e) => setNombre(e.target.value)} />
+                                    <input className={styles.input} value={nombre} onChange={(e) => setNombre(e.target.value)} />
                                 </div>
                                 <div className={styles.fieldWrapper}>
                                     <label>Apellido</label>
-                                    <input type="text" className={styles.input} value={apellido} onChange={(e) => setApellido(e.target.value)} />
+                                    <input className={styles.input} value={apellido} onChange={(e) => setApellido(e.target.value)} />
                                 </div>
                                 <div className={styles.fieldWrapper}>
                                     <label>Teléfono</label>
-                                    <input type="text" className={styles.input} value={telefono} onChange={(e) => setTelefono(e.target.value)} />
+                                    <input className={styles.input} value={telefono} onChange={(e) => setTelefono(e.target.value)} />
                                 </div>
                             </div>
 
@@ -272,39 +336,17 @@ export default function ReservasPage() {
                                 <tbody>
                                 <tr>
                                     <td className={styles.labelCell}>Habitación</td>
-                                    <td colSpan="3" style={{textAlign:'left', paddingLeft:'15px'}}>
-                                        <strong>{detalle.tipoHabitacion}</strong>
-                                    </td>
+                                    <td colSpan="3"><strong>{detalle.tipoHabitacion}</strong></td>
                                 </tr>
                                 <tr>
                                     <td className={styles.labelCell}>Ingreso</td>
-                                    <td className={styles.readOnlyText}>{getNombreDia(detalle.fechaIngreso)}</td>
-                                    <td>
-                                        <input type="date" className={styles.tableInput} value={detalle.fechaIngreso} disabled />
-                                    </td>
-                                    <td>
-                                        <input
-                                            type="time"
-                                            className={styles.tableInput}
-                                            value={detalle.horaIngreso}
-                                            onChange={e => setDetalle({...detalle, horaIngreso: e.target.value})}
-                                        />
-                                    </td>
+                                    <td>{getNombreDia(detalle.fechaIngreso)}</td>
+                                    <td><input type="date" disabled value={detalle.fechaIngreso} /></td>
                                 </tr>
                                 <tr>
                                     <td className={styles.labelCell}>Egreso</td>
-                                    <td className={styles.readOnlyText}>{getNombreDia(detalle.fechaEgreso)}</td>
-                                    <td>
-                                        <input type="date" className={styles.tableInput} value={detalle.fechaEgreso} disabled />
-                                    </td>
-                                    <td>
-                                        <input
-                                            type="time"
-                                            className={styles.tableInput}
-                                            value={detalle.horaEgreso}
-                                            onChange={e => setDetalle({...detalle, horaEgreso: e.target.value})}
-                                        />
-                                    </td>
+                                    <td>{getNombreDia(detalle.fechaEgreso)}</td>
+                                    <td><input type="date" disabled value={detalle.fechaEgreso} /></td>
                                 </tr>
                                 </tbody>
                             </table>

@@ -1,4 +1,4 @@
-/* app/reservas/reservas.module.css */
+/* src/app/reservas/reserva.module.css */
 
 /* --- 1. ESTILOS BASE (Copiados de Formulario) --- */
 
@@ -262,6 +262,28 @@
     border: 1px solid #ffcdd2;
     cursor: not-allowed;
     opacity: 0.7;
+}
+
+/* NUEVOS ESTADOS AGREGADOS */
+
+/* Estado: RESERVADA (Naranja/Amarillo) */
+.reserved {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+/* Estado: MANTENIMIENTO (Gris Oscuro) */
+.maintenance {
+    background-color: #d6d8d9;
+    color: #1b1e21;
+    border: 1px solid #c6c8ca;
+}
+
+/* Opacidad para toda la tarjeta si no está disponible */
+.cardDisabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 /* Botón para volver atrás */
