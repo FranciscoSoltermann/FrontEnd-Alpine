@@ -1,16 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState } from 'react';
 
-// --- IMPORTS REALES ---
+// --- IMPORTS (Asegúrate que estas rutas existan en tu proyecto) ---
 import ProtectedRoute from '../components/layout/ProtectedRoute';
 import ErrorModal from '../components/ui/modals/ErrorModal';
 import SuccessModal from '../components/ui/modals/SuccessModal';
 import ActionModal from '../components/ui/modals/ActionModal';
 import styles from './reserva.module.css';
 
-// URL de tu API (Ajusta el puerto si es diferente, ej: 8080, 3000, etc.)
+// URL de tu API
 const API_URL = "http://localhost:8080/api";
 
 export default function ReservasPage() {
@@ -18,9 +17,9 @@ export default function ReservasPage() {
     // --- ESTADOS ---
     const [step, setStep] = useState(1);
 
-    // Datos dinámicos desde el Backend
-    const [habitaciones, setHabitaciones] = useState([]); // Lista de habitaciones (columnas)
-    const [matrixData, setMatrixData] = useState([]);     // Datos procesados para la tabla
+    // Datos dinámicos
+    const [habitaciones, setHabitaciones] = useState([]); // Columnas
+    const [matrixData, setMatrixData] = useState([]);     // Datos completos (filas y columnas)
     const [daysRange, setDaysRange] = useState([]);       // Rango de fechas (filas)
 
     const [loading, setLoading] = useState(false);
@@ -45,32 +44,7 @@ export default function ReservasPage() {
     const [telefono, setTelefono] = useState('');
 
     // ======================
-    //   1. CARGAR HABITACIONES AL INICIO
-    // ======================
-    // Necesitamos saber qué habitaciones existen para armar las columnas de la tabla
-    useEffect(() => {
-        const fetchHabitaciones = async () => {
-            try {
-                // Asumo que tienes un endpoint que devuelve todas las habitaciones
-                // Si no, tendrás que obtenerlas junto con el estado en handleBuscar
-                const res = await fetch(`${API_URL}/habitaciones`);
-                if (!res.ok) throw new Error('Error al cargar habitaciones');
-
-                const data = await res.json();
-                // Ordenamos por número para que salgan en orden (101, 102...)
-                const sortedData = data.sort((a, b) => a.numero.localeCompare(b.numero, undefined, { numeric: true }));
-                setHabitaciones(sortedData);
-            } catch (error) {
-                console.error("Error cargando habitaciones:", error);
-                showError('Error de Conexión', 'No se pudo cargar la lista de habitaciones. Verifique que el servidor esté corriendo.');
-            }
-        };
-
-        fetchHabitaciones();
-    }, []);
-
-    // ======================
-    //   2. BUSCAR DISPONIBILIDAD (CONECTADO A BD)
+    //   1. BUSCAR DISPONIBILIDAD
     // ======================
     const handleBuscar = async () => {
         if (!fechaDesde) return showError('Faltan datos', 'Por favor seleccione la fecha "Desde".');
@@ -78,7 +52,7 @@ export default function ReservasPage() {
 
         const fDesde = new Date(fechaDesde);
         const fHasta = new Date(fechaHasta);
-        // Ajuste zona horaria para comparaciones
+        // Ajuste zona horaria simple para evitar desfases de día
         const fDesdeAjustada = new Date(fDesde.getTime() + fDesde.getTimezoneOffset() * 60000);
 
         if (fDesde > fHasta) return showError('Fecha inválida', 'La fecha de ingreso no puede ser posterior a la fecha de salida.');
@@ -86,16 +60,13 @@ export default function ReservasPage() {
         setLoading(true);
 
         try {
-            // --- PETICIÓN REAL AL BACKEND ---
-            // Enviamos rango de fechas para que el backend nos diga qué está ocupado
+            // Parametros query
             const queryParams = new URLSearchParams({
                 desde: fechaDesde,
                 hasta: fechaHasta
             });
 
-            // Endpoint sugerido: /habitaciones/estado?desde=YYYY-MM-DD&hasta=YYYY-MM-DD
-            // Este endpoint debería devolverte el estado de CADA habitación para CADA día en el rango,
-            // o al menos los rangos ocupados para que el front los mapee.
+            // Llamada al endpoint que SÍ funciona y trae todo (según tu captura)
             const res = await fetch(`${API_URL}/habitaciones/estado?${queryParams}`);
 
             if (!res.ok) {
@@ -103,62 +74,39 @@ export default function ReservasPage() {
                 throw new Error(errorBody?.mensaje || "Error al obtener disponibilidad del servidor.");
             }
 
-            const estadosBackend = await res.json();
+            const dataBackend = await res.json();
 
-            // --- PROCESAMIENTO DE DATOS ---
-            // 1. Generamos el array de días para las filas
+            // --- PROCESAMIENTO ---
+
+            // 1. Generar array de días (Filas)
             const dias = [];
-            for (let d = new Date(fDesdeAjustada); d <= fHasta; d.setDate(d.getDate() + 1)) {
-                dias.push(new Date(d).toISOString().split('T')[0]);
+            // Nota: clono la fecha para no mutar fDesdeAjustada en el loop
+            let currentDia = new Date(fDesdeAjustada);
+            // Aseguramos que el loop cubra el rango inclusivo
+            while (currentDia <= fHasta) {
+                dias.push(new Date(currentDia).toISOString().split('T')[0]);
+                currentDia.setDate(currentDia.getDate() + 1);
             }
             setDaysRange(dias);
 
-            // 2. Cruzamos las habitaciones base con la respuesta del backend
-            // Asumimos que 'estadosBackend' trae la info de ocupación.
-            // Si tu backend devuelve un array simple de habitaciones con una lista de estados, úsalo directo.
-            // Aquí hago un mapeo genérico asumiendo que el backend devuelve algo como:
-            // [ { idHabitacion: 1, estadosPorDia: [ { fecha: '2023-11-01', estado: 'OCUPADA' }, ... ] }, ... ]
+            // 2. Ordenar las habitaciones por número (opcional, para visualización limpia)
+            // Usamos 'numero' y 'idHabitacion' basado en tu JSON
+            const dataOrdenada = dataBackend.sort((a, b) =>
+                String(a.numero).localeCompare(String(b.numero), undefined, { numeric: true })
+            );
 
-            // NOTA: Si tu backend devuelve solo las ocupadas, la lógica sería similar a la del mock anterior (buscar coincidencias).
-            // Adaptaré la lógica para que sea robusta:
+            // 3. Setear estados
+            // Como el backend ya devuelve la estructura con 'estadosPorDia', usamos la misma respuesta
+            // tanto para definir las columnas (habitaciones) como los datos de la tabla.
+            setHabitaciones(dataOrdenada);
+            setMatrixData(dataOrdenada);
 
-            const dataProcesada = habitaciones.map(hab => {
-                // Buscamos si hay datos específicos para esta habitación en la respuesta
-                const datosHab = estadosBackend.find(d => d.id === hab.id || d.idHabitacion === hab.id);
-
-                // Generamos el estado día por día
-                const estadosPorDia = dias.map(fecha => {
-                    // Si el backend ya nos da el día masticado:
-                    let estadoDia = 'DISPONIBLE';
-
-                    if (datosHab && datosHab.estadosPorDia) {
-                        const diaEncontrado = datosHab.estadosPorDia.find(d => d.fecha === fecha);
-                        if (diaEncontrado) estadoDia = diaEncontrado.estado;
-                    }
-                    // Si el backend devuelve rangos (como en tu mock anterior), usamos esa lógica:
-                    else if (Array.isArray(estadosBackend)) {
-                        // Buscamos en la lista plana de estados/reservas del backend
-                        const rangoOcupado = estadosBackend.find(r =>
-                            (r.idHabitacion === hab.id || r.habitacion?.id === hab.id) &&
-                            fecha >= r.fechaInicio &&
-                            fecha <= r.fechaFin
-                        );
-                        if (rangoOcupado) estadoDia = rangoOcupado.estado;
-                    }
-
-                    return { fecha, estado: estadoDia };
-                });
-
-                return { ...hab, estadosPorDia };
-            });
-
-            setMatrixData(dataProcesada);
             setStep(2);
             setSelectedCells([]);
 
         } catch (e) {
             console.error(e);
-            showError('Error de Servidor', e.message || "No se pudo obtener la información de disponibilidad.");
+            showError('Error de Servidor', e.message || "No se pudo obtener la información. Verifica que el backend esté corriendo.");
         } finally {
             setLoading(false);
         }
@@ -168,9 +116,11 @@ export default function ReservasPage() {
     //   SELECCIÓN DE CELDAS
     // ======================
     const handleCellClick = (habId, fecha, estado, tipoHabitacion, numero) => {
+        // Solo permitimos seleccionar si está disponible
         if (estado !== 'DISPONIBLE') return;
 
         setSelectedCells(prev => {
+            // Verificamos si ya estaba seleccionada para quitarla o agregarla
             const exists = prev.find(item => item.habId === habId && item.fecha === fecha);
             if (exists) {
                 return prev.filter(item => item !== exists);
@@ -181,7 +131,7 @@ export default function ReservasPage() {
     };
 
     // ======================
-    //   PASO 2 -> 3: IR A RESERVAR
+    //   NAVEGACIÓN Y CONFIRMACIÓN
     // ======================
     const handleIrAReservar = () => {
         if (selectedCells.length === 0) {
@@ -190,11 +140,8 @@ export default function ReservasPage() {
         setStep(3);
     };
 
-    // ======================
-    //   PASO 3: CONFIRMAR
-    // ======================
     const handlePreConfirmar = () => {
-        if (!nombre || !apellido || !numDoc) return showError('Datos incompletos', "Complete los datos del pasajero.");
+        if (!nombre || !apellido || !numDoc) return showError('Datos incompletos', "Complete los datos obligatorios del pasajero.");
 
         const msg = selectedCells.length === 1
             ? `¿Desea reservar la habitación ${selectedCells[0].numero} para el día ${selectedCells[0].fecha}?`
@@ -206,8 +153,7 @@ export default function ReservasPage() {
     const handleConfirmarReal = async () => {
         closeAction();
 
-        // Preparamos el objeto para el Backend
-        // NOTA: Ajusta esta estructura según lo que espera tu Controller Java (ej: ReservaDTO)
+        // Estructura del Request para el Backend
         const reservaRequest = {
             huesped: {
                 tipoDocumento: tipoDoc,
@@ -216,12 +162,11 @@ export default function ReservasPage() {
                 apellido,
                 telefono
             },
-            // Si tu backend acepta una lista de días/habitaciones:
+            // Mapeamos la selección al formato que espera tu API
             detalles: selectedCells.map(cell => ({
-                habitacionId: cell.habId,
+                habitacionId: cell.habId, // Asegúrate que tu DTO espera 'habitacionId'
                 fecha: cell.fecha
             }))
-            // O si espera una reserva por rango/habitación, tendrías que agruparlas aquí.
         };
 
         try {
@@ -244,7 +189,7 @@ export default function ReservasPage() {
         }
     };
 
-    // --- UTILS ---
+    // --- UTILIDADES ---
     const showError = (titulo, desc) => setErrorModal({ isOpen: true, titulo, descripcion: desc });
     const closeError = () => setErrorModal({ ...errorModal, isOpen: false });
     const showSuccess = (titulo, desc) => setSuccessModal({ isOpen: true, titulo, descripcion: desc });
@@ -253,9 +198,14 @@ export default function ReservasPage() {
     const closeAction = () => setActionModal({ ...actionModal, isOpen: false });
 
     const resetFormularioCompleto = () => {
-        setStep(1); setFechaDesde(''); setFechaHasta(''); setSelectedCells([]);
+        setStep(1);
+        // No limpiamos fechas para permitir búsquedas consecutivas si se desea
+        setSelectedCells([]);
         setNombre(''); setApellido(''); setTelefono(''); setNumDoc('');
     };
+
+    // Helper para obtener ID seguro (tu JSON usa 'idHabitacion')
+    const getHabId = (hab) => hab.idHabitacion || hab.id;
 
     return (
         <ProtectedRoute>
@@ -266,7 +216,7 @@ export default function ReservasPage() {
             <div className={styles.container}>
 
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <h1 className={styles.title} style={{marginTop:'10px'}}>MOSTRAR ESTADO DE HABITACIONES</h1>
+                    <h1 className={styles.title} style={{marginTop:'10px'}}>DISPONIBILIDAD DE HABITACIONES</h1>
                 </div>
 
                 <div className={styles.formContainer}>
@@ -312,15 +262,12 @@ export default function ReservasPage() {
                                     <thead>
                                     <tr>
                                         <th className={styles.stickyCol}>Fecha / Habitación</th>
-                                        {/* Renderizamos columnas dinámicas basadas en lo que trajo la BD */}
-                                        {habitaciones.length > 0 ? habitaciones.map(hab => (
-                                            <th key={hab.id}>
+                                        {habitaciones.map(hab => (
+                                            <th key={getHabId(hab)}>
                                                 {/* Usamos hab.tipo y hab.numero reales de la BD */}
-                                                {hab.tipo || "Habitación"} <br/>
+                                                {hab.tipo} <br/>
                                                 <small style={{fontSize:'0.85em', color:'#555'}}>Hab. {hab.numero}</small>
                                             </th>
-                                        )) : matrixData.map(hab => ( // Fallback si usamos matrixData directo
-                                            <th key={hab.id}>{hab.tipo} <br/> <small>{hab.numero}</small></th>
                                         ))}
                                     </tr>
                                     </thead>
@@ -329,27 +276,40 @@ export default function ReservasPage() {
                                         <tr key={fecha}>
                                             <td className={styles.stickyCol}><strong>{fecha}</strong></td>
                                             {matrixData.map(hab => {
-                                                const infoDia = hab.estadosPorDia.find(d => d.fecha === fecha);
+                                                // Tu JSON tiene 'estadosPorDia' dentro de cada habitación
+                                                const infoDia = hab.estadosPorDia ? hab.estadosPorDia.find(d => d.fecha === fecha) : null;
                                                 const estado = infoDia ? infoDia.estado : 'DISPONIBLE';
 
+                                                // Usamos el ID correcto para verificar selección
+                                                const currentId = getHabId(hab);
                                                 const isSelected = selectedCells.some(
-                                                    cell => cell.habId === hab.id && cell.fecha === fecha
+                                                    cell => cell.habId === currentId && cell.fecha === fecha
                                                 );
 
                                                 return (
-                                                    <td key={`${hab.id}-${fecha}`} className={styles.cellCenter}>
+                                                    <td key={`${currentId}-${fecha}`} className={styles.cellCenter}>
                                                         <div
                                                             className={`
                                                                     ${styles.checkboxSquare} 
                                                                     ${styles[estado] || styles.DISPONIBLE} 
                                                                     ${isSelected ? styles.selected : ''}
                                                                 `}
-                                                            onClick={() => handleCellClick(hab.id, fecha, estado, hab.tipo, hab.numero)}
-                                                            title={`${hab.numero}: ${estado}`}
+                                                            onClick={() => handleCellClick(currentId, fecha, estado, hab.tipo, hab.numero)}
+                                                            title={`Hab ${hab.numero}: ${estado}`}
                                                         >
-                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                                                <polyline points="20 6 9 17 4 12"></polyline>
-                                                            </svg>
+                                                            {/* Icono Check o Cruz dependiendo del estado */}
+                                                            {isSelected ? (
+                                                                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                                </svg>
+                                                            ) : estado === 'DISPONIBLE' ? (
+                                                                <span style={{opacity:0.2}}>+</span>
+                                                            ) : (
+                                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                                </svg>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 );
@@ -362,19 +322,19 @@ export default function ReservasPage() {
 
                             <div className={styles.legendContainer}>
                                 <div className={styles.legendItem}>
-                                    <div className={`${styles.checkboxSquare} ${styles.DISPONIBLE}`} style={{width:24, height:24, cursor:'default'}}><svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3" fill="none"><polyline points="20 6 9 17 4 12"/></svg></div>
+                                    <div className={`${styles.checkboxSquare} ${styles.DISPONIBLE}`} style={{width:20, height:20, cursor:'default'}}></div>
                                     <span>Disponible</span>
                                 </div>
                                 <div className={styles.legendItem}>
-                                    <div className={`${styles.checkboxSquare} ${styles.OCUPADA}`} style={{width:24, height:24, cursor:'default'}}><svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3" fill="none"><polyline points="20 6 9 17 4 12"/></svg></div>
+                                    <div className={`${styles.checkboxSquare} ${styles.OCUPADA}`} style={{width:20, height:20, cursor:'default'}}></div>
                                     <span>Ocupada</span>
                                 </div>
                                 <div className={styles.legendItem}>
-                                    <div className={`${styles.checkboxSquare} ${styles.RESERVADA}`} style={{width:24, height:24, cursor:'default'}}><svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3" fill="none"><polyline points="20 6 9 17 4 12"/></svg></div>
+                                    <div className={`${styles.checkboxSquare} ${styles.RESERVADA}`} style={{width:20, height:20, cursor:'default'}}></div>
                                     <span>Reservada</span>
                                 </div>
                                 <div className={styles.legendItem}>
-                                    <div className={`${styles.checkboxSquare} ${styles.MANTENIMIENTO}`} style={{width:24, height:24, cursor:'default'}}><svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3" fill="none"><polyline points="20 6 9 17 4 12"/></svg></div>
+                                    <div className={`${styles.checkboxSquare} ${styles.MANTENIMIENTO}`} style={{width:20, height:20, cursor:'default'}}></div>
                                     <span>Mantenimiento</span>
                                 </div>
                             </div>
@@ -384,20 +344,21 @@ export default function ReservasPage() {
                     {/* --- PASO 3: FORMULARIO --- */}
                     {step === 3 && (
                         <div className="animate-fadeIn">
-                            <h3 style={{textAlign:'center', color:'#555'}}>Datos del Pasajero Principal</h3>
+                            <h3 style={{textAlign:'center', color:'#555'}}>Datos del Cliente</h3>
 
                             <div className={styles.selectionInfo}>
-                                <p style={{margin: '0 0 10px 0', fontWeight:'bold'}}>Resumen de selección ({selectedCells.length}):</p>
-                                <ul style={{listStyle:'none', padding:0, margin:0, maxHeight:'100px', overflowY:'auto', border:'1px solid #bbdefb', background:'white', borderRadius:'4px'}}>
+                                <p style={{margin: '0 0 10px 0', fontWeight:'bold'}}>Resumen de selección:</p>
+                                <ul style={{listStyle:'none', padding:0, margin:0, maxHeight:'150px', overflowY:'auto', border:'1px solid #e0e0e0', background:'#f9f9f9', borderRadius:'4px'}}>
                                     {selectedCells.map((item, idx) => (
-                                        <li key={idx} style={{padding:'5px 10px', borderBottom:'1px solid #eee', fontSize:'0.9rem'}}>
-                                            {item.fecha} — <strong>Hab. {item.numero}</strong> ({item.tipoHabitacion})
+                                        <li key={idx} style={{padding:'8px 12px', borderBottom:'1px solid #eee', fontSize:'0.9rem', display:'flex', justifyContent:'space-between'}}>
+                                            <span>{item.fecha}</span>
+                                            <strong>Hab. {item.numero} ({item.tipoHabitacion})</strong>
                                         </li>
                                     ))}
                                 </ul>
                             </div>
 
-                            <div className={styles.gridMiddle}>
+                            <div className={styles.gridMiddle} style={{marginTop:'20px'}}>
                                 <div className={styles.fieldWrapper}>
                                     <label>Tipo Doc</label>
                                     <select className={styles.select} value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)}>
@@ -407,7 +368,7 @@ export default function ReservasPage() {
                                 </div>
                                 <div className={styles.fieldWrapper}>
                                     <label>Nro Doc</label>
-                                    <input className={styles.input} value={numDoc} onChange={(e) => setNumDoc(e.target.value)} />
+                                    <input className={styles.input} value={numDoc} onChange={(e) => setNumDoc(e.target.value)} placeholder="Ej: 12345678" />
                                 </div>
                             </div>
 
@@ -418,8 +379,8 @@ export default function ReservasPage() {
                             </div>
 
                             <div className={styles.footerActions}>
-                                <button className={styles.btnVolverOrange} onClick={() => setStep(2)}>VOLVER A TABLA</button>
-                                <button className={styles.btnReservarGreen} onClick={handlePreConfirmar}>CONFIRMAR TODO</button>
+                                <button className={styles.btnVolverOrange} onClick={() => setStep(2)}>VOLVER</button>
+                                <button className={styles.btnReservarGreen} onClick={handlePreConfirmar}>CONFIRMAR RESERVA</button>
                             </div>
                         </div>
                     )}
