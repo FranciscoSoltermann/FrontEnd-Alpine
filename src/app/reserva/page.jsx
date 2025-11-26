@@ -153,8 +153,19 @@ export default function ReservasPage() {
     const handleConfirmarReal = async () => {
         closeAction();
 
-        // Estructura del Request para el Backend
+        // 1) calcular ingreso/egreso
+        const fechas = selectedCells.map(s => s.fecha).sort();
+        const ingreso = fechas[0];
+        const egreso = fechas[fechas.length - 1];
+
+        // 2) habitaciones únicas
+        const habitacionesIds = Array.from(new Set(selectedCells.map(s => s.habId)));
+
+        // --- CORRECCIÓN AQUÍ ---
         const reservaRequest = {
+            ingreso: ingreso,
+            egreso: egreso,
+            // Enviamos el objeto 'huesped' completo para que el backend lo procese
             huesped: {
                 tipoDocumento: tipoDoc,
                 documento: numDoc,
@@ -162,11 +173,8 @@ export default function ReservasPage() {
                 apellido,
                 telefono
             },
-            // Mapeamos la selección al formato que espera tu API
-            detalles: selectedCells.map(cell => ({
-                habitacionId: cell.habId, // Asegúrate que tu DTO espera 'habitacionId'
-                fecha: cell.fecha
-            }))
+            // CAMBIO CLAVE: La propiedad debe llamarse "habitaciones" para coincidir con el DTO de Java
+            habitaciones: habitacionesIds
         };
 
         try {
@@ -178,11 +186,11 @@ export default function ReservasPage() {
 
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
-                throw new Error(errorData.mensaje || "No se pudo crear la reserva.");
+                // Si el backend manda un mensaje específico, lo mostramos
+                throw new Error(errorData.mensaje || errorData.message || "Error al crear la reserva.");
             }
 
             showSuccess('¡Éxito!', `Se ha registrado correctamente la reserva.`);
-
         } catch (error) {
             console.error(error);
             showError('Error al Reservar', error.message);

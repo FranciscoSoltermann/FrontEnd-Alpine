@@ -209,9 +209,9 @@ export default function BuscarPage() {
           <Link href="/dashboard" className={`${styles.btn} ${styles.btnCancelar}`}>
             CANCELAR
           </Link>
-          <Link href="/" className={`${styles.btn} ${styles.btnCrear}`}>
-            CREAR HUÉSPED
-          </Link>
+            <Link href="/darDeAlta" className={`${styles.btn} ${styles.btnCrear}`}>
+                CREAR HUÉSPED
+            </Link>
           <button className={`${styles.btn} ${styles.btnAceptar}`}>
             ACEPTAR
           </button>
