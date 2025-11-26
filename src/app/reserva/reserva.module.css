@@ -1,15 +1,15 @@
-/* src/app/reservas/reserva.module.css */
+/* app/reserva/reserva.module.css */
 
-/* --- 1. ESTILOS BASE (Copiados de Formulario) --- */
+/* --- 1. ESTILOS BASE --- */
 
 .container {
     background-color: #ffffff;
-    max-width: 1000px; /* Un poco más ancho para la tabla */
+    max-width: 1000px; /* Ancho máximo del contenedor */
     margin: 2rem auto;
     padding: 2.5rem;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    font-family: inherit;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 .title {
@@ -18,45 +18,34 @@
     font-weight: 700;
     color: #333;
     margin-bottom: 2.5rem;
-    text-transform: uppercase; /* Para que diga "RESERVA DE..." en mayúsculas */
+    text-transform: uppercase;
 }
 
-/* --- 2. GRILLAS DE FORMULARIO (Adaptadas a Reservas) --- */
+.formContainer {
+    width: 100%;
+}
+
+/* --- 2. FILTROS SUPERIORES (FECHAS) --- */
 
 .gridTop {
     display: grid;
-    grid-template-columns: 1fr 1fr 150px; /* Fechas + Botón Buscar */
+    grid-template-columns: 1fr 1fr 150px; /* Dos inputs y el botón */
     gap: 1.5rem;
-    align-items: end; /* Alinea el botón con los inputs */
-    margin-bottom: 1.5rem;
+    align-items: end; /* Alinear abajo para que coincida con el input */
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #eee; /* Separador sutil */
 }
-
-.gridMiddle {
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* Tipo y Nro documento */
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
-}
-
-.gridBottom {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr; /* Nombre, Apellido, Teléfono */
-    gap: 1.5rem;
-    margin-bottom: 2.5rem;
-}
-
-/* --- 3. INPUTS Y LABELS (Idénticos a Formulario) --- */
 
 .fieldWrapper {
     display: flex;
     flex-direction: column;
-    position: relative; /* Para los popups de error si agregas validación */
 }
 
 .fieldWrapper label {
     margin-bottom: 0.5rem;
     font-size: 0.875rem;
-    font-weight: 600; /* Un poco más negrita como en tu foto */
+    font-weight: 600;
     color: #2d2d2d;
 }
 
@@ -67,16 +56,11 @@
     border-radius: 5px;
     font-size: 0.9rem;
     background-color: #fdfdfd;
-    box-sizing: border-box;
+    box-sizing: border-box; /* Para que el padding no afecte el ancho */
 }
 
-.select {
-    background-color: #f9f9f9;
-}
-
-/* --- 4. BOTÓN BUSCAR (Celeste) --- */
 .btnBuscar {
-    background-color: #4dd0e1; /* Cyan/Celeste */
+    background-color: #4dd0e1; /* Celeste */
     color: white;
     border: none;
     padding: 0.75rem;
@@ -84,220 +68,253 @@
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.9rem;
-    height: 42px; /* Para alinear altura con inputs */
-    transition: opacity 0.2s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    height: 42px; /* Misma altura que los inputs estándar */
+    width: 100%;
+    transition: opacity 0.2s;
 }
 
 .btnBuscar:hover {
     opacity: 0.9;
 }
 
-/* --- 5. TABLA DE DETALLES --- */
-.detailsTable {
+.btnBuscar:disabled {
+    background-color: #b2ebf2;
+    cursor: not-allowed;
+}
+
+/* --- 3. BOTONES DE ACCIÓN (VOLVER / RESERVAR) --- */
+
+.topActions {
+    display: flex;
+    justify-content: flex-end; /* A la derecha */
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+/* Botón Volver (Naranja) */
+.btnVolverOrange {
+    background-color: #ff9800;
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    text-transform: uppercase;
+    transition: background-color 0.2s;
+}
+
+.btnVolverOrange:hover {
+    background-color: #f57c00;
+}
+
+/* Botón Reservar (Verde) */
+.btnReservarGreen {
+    background-color: #8bc34a; /* Verde claro */
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    text-transform: uppercase;
+    transition: background-color 0.2s;
+}
+
+.btnReservarGreen:hover {
+    background-color: #7cb342;
+}
+
+/* --- 4. MATRIZ DE ESTADO (TABLA) --- */
+
+.tableWrapper {
     width: 100%;
-    border-collapse: collapse;
-    border: 1px solid #999;
-    margin: 2rem 0;
+    overflow-x: auto; /* Scroll horizontal necesario */
+    overflow-y: auto;
+    max-height: 500px; /* Altura máxima para scroll vertical */
+    border: 1px solid #ddd;
+    background: #fff;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.matrixTable {
+    width: 100%;
+    border-collapse: separate; /* Necesario para sticky headers */
+    border-spacing: 0;
     font-size: 0.9rem;
 }
 
-.detailsTable td {
-    border: 1px solid #999;
+.matrixTable th, .matrixTable td {
+    border: 1px solid #e0e0e0;
     padding: 10px;
     text-align: center;
+    min-width: 100px; /* Ancho mínimo para columnas */
+}
+
+/* Cabecera de Habitaciones (Sticky Top) */
+.matrixTable th {
+    background-color: #eeeeee;
     color: #333;
-}
-
-.labelCell {
-    background-color: #dcedc8; /* Verde clarito para encabezados */
     font-weight: bold;
-    width: 25%;
-    text-align: center !important;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 2px solid #ccc;
 }
 
-/* --- 6. BOTONES DEL PIE (Usando tus colores) --- */
+/* Columna de Fechas (Sticky Left) */
+.stickyCol {
+    position: sticky;
+    left: 0;
+    background-color: #e0e0e0; /* Un poco más oscuro para diferenciar */
+    z-index: 20;
+    font-weight: bold;
+    color: #444;
+    border-right: 2px solid #ccc;
+}
+
+/* Asegurar que la esquina superior izquierda (cruce sticky) quede encima */
+.matrixTable thead tr th.stickyCol {
+    z-index: 30;
+    background-color: #d6d6d6;
+}
+
+.cellCenter {
+    text-align: center;
+    vertical-align: middle;
+    padding: 6px;
+}
+
+/* --- 5. CHECKBOX VISUAL (CUADRADOS) --- */
+
+.checkboxSquare {
+    width: 32px;
+    height: 32px;
+    margin: 0 auto; /* Centrado */
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white; /* Color del tick ✓ */
+    border: 1px solid rgba(0,0,0,0.1);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+/* Tamaño del ícono SVG dentro del cuadrado */
+.checkboxSquare svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* ESTADOS Y COLORES */
+
+.DISPONIBLE {
+    background-color: #8bc34a; /* Verde */
+    cursor: pointer;
+}
+
+.DISPONIBLE:hover {
+    opacity: 0.85;
+}
+
+/* Estado seleccionado (Borde azul) */
+.DISPONIBLE.selected {
+    box-shadow: 0 0 0 3px #2196f3; /* Anillo azul exterior */
+    transform: scale(1.1);
+    z-index: 5;
+    position: relative;
+}
+
+.OCUPADA {
+    background-color: #ef5350; /* Rojo */
+    cursor: not-allowed;
+    opacity: 0.9;
+}
+
+.RESERVADA {
+    background-color: #ff9800; /* Naranja */
+    cursor: not-allowed;
+    opacity: 0.9;
+}
+
+/* --- 6. LEYENDA INFERIOR --- */
+
+.legendContainer {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 15px;
+    padding: 15px;
+    background-color: #fafafa;
+    border-radius: 4px;
+    border: 1px solid #eee;
+}
+
+.legendItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+/* --- 7. FORMULARIO DE PASAJERO (PASO 3) --- */
+
+.selectionInfo {
+    text-align: center;
+    background-color: #e3f2fd; /* Azul muy claro */
+    color: #0d47a1;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 2rem;
+    border: 1px solid #bbdefb;
+}
+
+.gridMiddle {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Dos columnas iguales */
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.gridBottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr; /* Tres columnas iguales */
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+/* Botones inferiores (reutilizamos estilos, pero contenedores específicos si hace falta) */
 .footerActions {
     display: flex;
-    justify-content: space-between;
-    margin-top: 2.5rem;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
     padding-top: 1.5rem;
     border-top: 1px solid #eee;
 }
 
-.btnRechazar {
-    /* Usamos tu .cancelButton (#d9534f) */
-    background-color: #d9534f;
-    color: white;
-    border: none;
-    padding: 0.8rem 2.5rem;
-    font-weight: bold;
-    border-radius: 6px;
-    cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
+/* --- 8. RESPONSIVE --- */
 
-.btnAceptar {
-    /* Usamos tu .submitButton (#90ee90) */
-    background-color: #90ee90;
-    color: #222; /* Texto oscuro para contraste */
-    border: none;
-    padding: 0.8rem 2.5rem;
-    font-weight: bold;
-    border-radius: 6px;
-    cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.btnRechazar:hover, .btnAceptar:hover {
-    opacity: 0.85;
-}
-
-/* --- 7. RESPONSIVE --- */
 @media (max-width: 768px) {
     .gridTop, .gridMiddle, .gridBottom {
-        grid-template-columns: 1fr; /* Todo en 1 columna */
+        grid-template-columns: 1fr; /* Todo a una columna en móvil */
     }
 
-    .btnBuscar {
-        width: 100%; /* Botón ancho completo */
+    .btnBuscar, .btnVolverOrange, .btnReservarGreen {
+        width: 100%; /* Botones ancho completo */
     }
 
-    .container {
-        padding: 1.5rem;
-    }
-
-    .footerActions {
+    .topActions, .footerActions {
         flex-direction: column;
-        gap: 1rem;
+        gap: 10px;
     }
 
-    .btnRechazar, .btnAceptar {
-        width: 100%;
+    .legendContainer {
+        flex-wrap: wrap;
     }
-}
-.tableInput {
-    width: 100%;
-    padding: 5px;
-    border: 1px solid transparent; /* Invisible por defecto para que parezca texto */
-    border-radius: 4px;
-    background-color: transparent;
-    font-family: inherit;
-    font-size: 0.95rem;
-    text-align: center;
-}
-
-/* Cuando haces click para editar, se marca el borde */
-.tableInput:focus, .tableInput:hover {
-    border: 1px solid #66afe9;
-    background-color: #fff;
-    outline: none;
-}
-
-.readOnlyText {
-    font-weight: 500;
-    color: #555;
-    background-color: #fdfdfd; /* Un gris muy clarito para indicar que es calculado */
-}
-
-
-.roomsGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 1.5rem;
-    margin-top: 2rem;
-    animation: fadeIn 0.5s ease;
-}
-
-.roomCard {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 1rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background-color: white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
-
-.roomCard:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
-
-.roomNumber {
-    font-size: 1.2rem;
-    font-weight: 800;
-    color: #333;
-    display: block;
-    margin-bottom: 0.5rem;
-}
-
-.roomType {
-    font-size: 0.85rem;
-    color: #666;
-    margin-bottom: 0.5rem;
-    display: block;
-}
-
-/* Estados de la habitación */
-.statusBadge {
-    display: inline-block;
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: bold;
-    text-transform: uppercase;
-}
-
-.available {
-    background-color: #e8f5e9;
-    color: #2e7d32;
-    border: 1px solid #c8e6c9;
-}
-
-.occupied {
-    background-color: #ffebee;
-    color: #c62828;
-    border: 1px solid #ffcdd2;
-    cursor: not-allowed;
-    opacity: 0.7;
-}
-
-/* NUEVOS ESTADOS AGREGADOS */
-
-/* Estado: RESERVADA (Naranja/Amarillo) */
-.reserved {
-    background-color: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeeba;
-}
-
-/* Estado: MANTENIMIENTO (Gris Oscuro) */
-.maintenance {
-    background-color: #d6d8d9;
-    color: #1b1e21;
-    border: 1px solid #c6c8ca;
-}
-
-/* Opacidad para toda la tarjeta si no está disponible */
-.cardDisabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-}
-
-/* Botón para volver atrás */
-.btnBack {
-    background-color: transparent;
-    border: 1px solid #999;
-    color: #555;
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-bottom: 1rem;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
 }
