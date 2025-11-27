@@ -66,7 +66,7 @@ export default function ReservasPage() {
                 hasta: fechaHasta
             });
 
-            // Llamada al endpoint que SÍ funciona y trae todo (según tu captura)
+            // Llamada al endpoint
             const res = await fetch(`${API_URL}/habitaciones/estado?${queryParams}`);
 
             if (!res.ok) {
@@ -80,24 +80,19 @@ export default function ReservasPage() {
 
             // 1. Generar array de días (Filas)
             const dias = [];
-            // Nota: clono la fecha para no mutar fDesdeAjustada en el loop
             let currentDia = new Date(fDesdeAjustada);
-            // Aseguramos que el loop cubra el rango inclusivo
             while (currentDia <= fHasta) {
                 dias.push(new Date(currentDia).toISOString().split('T')[0]);
                 currentDia.setDate(currentDia.getDate() + 1);
             }
             setDaysRange(dias);
 
-            // 2. Ordenar las habitaciones por número (opcional, para visualización limpia)
-            // Usamos 'numero' y 'idHabitacion' basado en tu JSON
+            // 2. Ordenar las habitaciones por número
             const dataOrdenada = dataBackend.sort((a, b) =>
                 String(a.numero).localeCompare(String(b.numero), undefined, { numeric: true })
             );
 
             // 3. Setear estados
-            // Como el backend ya devuelve la estructura con 'estadosPorDia', usamos la misma respuesta
-            // tanto para definir las columnas (habitaciones) como los datos de la tabla.
             setHabitaciones(dataOrdenada);
             setMatrixData(dataOrdenada);
 
@@ -120,7 +115,6 @@ export default function ReservasPage() {
         if (estado !== 'DISPONIBLE') return;
 
         setSelectedCells(prev => {
-            // Verificamos si ya estaba seleccionada para quitarla o agregarla
             const exists = prev.find(item => item.habId === habId && item.fecha === fecha);
             if (exists) {
                 return prev.filter(item => item !== exists);
@@ -161,11 +155,9 @@ export default function ReservasPage() {
         // 2) habitaciones únicas
         const habitacionesIds = Array.from(new Set(selectedCells.map(s => s.habId)));
 
-        // --- CORRECCIÓN AQUÍ ---
         const reservaRequest = {
             ingreso: ingreso,
             egreso: egreso,
-            // Enviamos el objeto 'huesped' completo para que el backend lo procese
             huesped: {
                 tipoDocumento: tipoDoc,
                 documento: numDoc,
@@ -173,7 +165,6 @@ export default function ReservasPage() {
                 apellido,
                 telefono
             },
-            // CAMBIO CLAVE: La propiedad debe llamarse "habitaciones" para coincidir con el DTO de Java
             habitaciones: habitacionesIds
         };
 
@@ -186,7 +177,6 @@ export default function ReservasPage() {
 
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
-                // Si el backend manda un mensaje específico, lo mostramos
                 throw new Error(errorData.mensaje || errorData.message || "Error al crear la reserva.");
             }
 
@@ -207,12 +197,10 @@ export default function ReservasPage() {
 
     const resetFormularioCompleto = () => {
         setStep(1);
-        // No limpiamos fechas para permitir búsquedas consecutivas si se desea
         setSelectedCells([]);
         setNombre(''); setApellido(''); setTelefono(''); setNumDoc('');
     };
 
-    // Helper para obtener ID seguro (tu JSON usa 'idHabitacion')
     const getHabId = (hab) => hab.idHabitacion || hab.id;
 
     return (
@@ -272,7 +260,6 @@ export default function ReservasPage() {
                                         <th className={styles.stickyCol}>Fecha / Habitación</th>
                                         {habitaciones.map(hab => (
                                             <th key={getHabId(hab)}>
-                                                {/* Usamos hab.tipo y hab.numero reales de la BD */}
                                                 {hab.tipo} <br/>
                                                 <small style={{fontSize:'0.85em', color:'#555'}}>Hab. {hab.numero}</small>
                                             </th>
@@ -284,15 +271,16 @@ export default function ReservasPage() {
                                         <tr key={fecha}>
                                             <td className={styles.stickyCol}><strong>{fecha}</strong></td>
                                             {matrixData.map(hab => {
-                                                // Tu JSON tiene 'estadosPorDia' dentro de cada habitación
                                                 const infoDia = hab.estadosPorDia ? hab.estadosPorDia.find(d => d.fecha === fecha) : null;
                                                 const estado = infoDia ? infoDia.estado : 'DISPONIBLE';
 
-                                                // Usamos el ID correcto para verificar selección
                                                 const currentId = getHabId(hab);
                                                 const isSelected = selectedCells.some(
                                                     cell => cell.habId === currentId && cell.fecha === fecha
                                                 );
+
+                                                // Lógica para detectar Mantenimiento
+                                                const isMantenimiento = estado === 'MANTENIMIENTO';
 
                                                 return (
                                                     <td key={`${currentId}-${fecha}`} className={styles.cellCenter}>
@@ -304,8 +292,14 @@ export default function ReservasPage() {
                                                                 `}
                                                             onClick={() => handleCellClick(currentId, fecha, estado, hab.tipo, hab.numero)}
                                                             title={`Hab ${hab.numero}: ${estado}`}
+                                                            // Estilo condicional para Mantenimiento
+                                                            style={isMantenimiento ? {
+                                                                backgroundColor: '#E0E0E0',
+                                                                borderColor: '#BDBDBD',
+                                                                cursor: 'not-allowed',
+                                                                color: '#9E9E9E'
+                                                            } : {}}
                                                         >
-                                                            {/* Icono Check o Cruz dependiendo del estado */}
                                                             {isSelected ? (
                                                                 <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
                                                                     <polyline points="20 6 9 17 4 12"></polyline>
@@ -342,7 +336,17 @@ export default function ReservasPage() {
                                     <span>Reservada</span>
                                 </div>
                                 <div className={styles.legendItem}>
-                                    <div className={`${styles.checkboxSquare} ${styles.MANTENIMIENTO}`} style={{width:20, height:20, cursor:'default'}}></div>
+                                    {/* Leyenda corregida para que coincida con el estilo gris */}
+                                    <div
+                                        className={`${styles.checkboxSquare} ${styles.MANTENIMIENTO}`}
+                                        style={{
+                                            width:20,
+                                            height:20,
+                                            cursor:'default',
+                                            backgroundColor: '#E0E0E0',
+                                            borderColor: '#BDBDBD'
+                                        }}
+                                    ></div>
                                     <span>Mantenimiento</span>
                                 </div>
                             </div>

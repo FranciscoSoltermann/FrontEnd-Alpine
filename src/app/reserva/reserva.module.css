@@ -240,6 +240,13 @@
     opacity: 0.9;
 }
 
+.MANTENIMIENTO {
+    background-color: #e0e0e0; /* Gris claro de fondo */
+    border: 1px solid #bdbdbd; /* Borde gris un poco más oscuro */
+    color: #757575;            /* Color gris oscuro para el icono (la X) */
+    cursor: not-allowed;       /* Cursor de prohibido */
+}
+
 /* --- 6. LEYENDA INFERIOR --- */
 
 .legendContainer {
