@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-// --- IMPORTS (Asegúrate que estas rutas existan en tu proyecto) ---
+// --- IMPORTS ---
 import ProtectedRoute from '../components/layout/ProtectedRoute';
 import ErrorModal from '../components/ui/modals/ErrorModal';
 import SuccessModal from '../components/ui/modals/SuccessModal';
@@ -17,11 +17,13 @@ export default function ReservasPage() {
     // --- ESTADOS ---
     const [step, setStep] = useState(1);
 
-    // Datos dinámicos
-    const [habitaciones, setHabitaciones] = useState([]); // Columnas
-    const [matrixData, setMatrixData] = useState([]);     // Datos completos (filas y columnas)
-    const [daysRange, setDaysRange] = useState([]);       // Rango de fechas (filas)
+    // NUEVO: Estado para saber qué botón apretó el usuario
+    const [accionTipo, setAccionTipo] = useState('RESERVAR'); // 'RESERVAR' o 'OCUPAR'
 
+    // Datos dinámicos
+    const [habitaciones, setHabitaciones] = useState([]);
+    const [matrixData, setMatrixData] = useState([]);
+    const [daysRange, setDaysRange] = useState([]);
     const [loading, setLoading] = useState(false);
 
     // Selección Múltiple
@@ -52,7 +54,6 @@ export default function ReservasPage() {
 
         const fDesde = new Date(fechaDesde);
         const fHasta = new Date(fechaHasta);
-        // Ajuste zona horaria simple para evitar desfases de día
         const fDesdeAjustada = new Date(fDesde.getTime() + fDesde.getTimezoneOffset() * 60000);
 
         if (fDesde > fHasta) return showError('Fecha inválida', 'La fecha de ingreso no puede ser posterior a la fecha de salida.');
@@ -60,25 +61,16 @@ export default function ReservasPage() {
         setLoading(true);
 
         try {
-            // Parametros query
-            const queryParams = new URLSearchParams({
-                desde: fechaDesde,
-                hasta: fechaHasta
-            });
-
-            // Llamada al endpoint
+            const queryParams = new URLSearchParams({ desde: fechaDesde, hasta: fechaHasta });
             const res = await fetch(`${API_URL}/habitaciones/estado?${queryParams}`);
 
             if (!res.ok) {
                 const errorBody = await res.json().catch(() => null);
-                throw new Error(errorBody?.mensaje || "Error al obtener disponibilidad del servidor.");
+                throw new Error(errorBody?.mensaje || "Error al obtener disponibilidad.");
             }
 
             const dataBackend = await res.json();
 
-            // --- PROCESAMIENTO ---
-
-            // 1. Generar array de días (Filas)
             const dias = [];
             let currentDia = new Date(fDesdeAjustada);
             while (currentDia <= fHasta) {
@@ -87,12 +79,10 @@ export default function ReservasPage() {
             }
             setDaysRange(dias);
 
-            // 2. Ordenar las habitaciones por número
             const dataOrdenada = dataBackend.sort((a, b) =>
                 String(a.numero).localeCompare(String(b.numero), undefined, { numeric: true })
             );
 
-            // 3. Setear estados
             setHabitaciones(dataOrdenada);
             setMatrixData(dataOrdenada);
 
@@ -101,7 +91,7 @@ export default function ReservasPage() {
 
         } catch (e) {
             console.error(e);
-            showError('Error de Servidor', e.message || "No se pudo obtener la información. Verifica que el backend esté corriendo.");
+            showError('Error de Servidor', e.message);
         } finally {
             setLoading(false);
         }
@@ -111,7 +101,6 @@ export default function ReservasPage() {
     //   SELECCIÓN DE CELDAS
     // ======================
     const handleCellClick = (habId, fecha, estado, tipoHabitacion, numero) => {
-        // Solo permitimos seleccionar si está disponible
         if (estado !== 'DISPONIBLE') return;
 
         setSelectedCells(prev => {
@@ -127,49 +116,50 @@ export default function ReservasPage() {
     // ======================
     //   NAVEGACIÓN Y CONFIRMACIÓN
     // ======================
-    const handleIrAReservar = () => {
+
+    // NUEVO: Función genérica para ir al paso 3 dependiendo de la acción
+    const handleIniciarProceso = (tipoAccion) => {
         if (selectedCells.length === 0) {
-            return showError('Selección requerida', "Por favor, seleccione al menos una celda 'Disponible' para continuar.");
+            return showError('Selección requerida', "Por favor, seleccione al menos una celda 'Disponible'.");
         }
+        setAccionTipo(tipoAccion); // Guardamos si es 'RESERVAR' u 'OCUPAR'
         setStep(3);
     };
 
     const handlePreConfirmar = () => {
-        if (!nombre || !apellido || !numDoc) return showError('Datos incompletos', "Complete los datos obligatorios del pasajero.");
+        if (!nombre || !apellido || !numDoc) return showError('Datos incompletos', "Complete los datos obligatorios.");
+
+        // Texto dinámico según la acción
+        const accionTexto = accionTipo === 'OCUPAR' ? 'ocupar' : 'reservar';
+        const tituloTexto = accionTipo === 'OCUPAR' ? 'Confirmar Ocupación' : 'Confirmar Reserva';
 
         const msg = selectedCells.length === 1
-            ? `¿Desea reservar la habitación ${selectedCells[0].numero} para el día ${selectedCells[0].fecha}?`
-            : `¿Desea confirmar la reserva de ${selectedCells.length} días seleccionados?`;
+            ? `¿Desea ${accionTexto} la habitación ${selectedCells[0].numero} para el día ${selectedCells[0].fecha}?`
+            : `¿Desea confirmar la acción para ${selectedCells.length} días seleccionados?`;
 
-        showConfirmAction("Confirmar Reserva", msg);
+        showConfirmAction(tituloTexto, msg);
     };
 
     const handleConfirmarReal = async () => {
         closeAction();
 
-        // 1) calcular ingreso/egreso
         const fechas = selectedCells.map(s => s.fecha).sort();
         const ingreso = fechas[0];
         const egreso = fechas[fechas.length - 1];
-
-        // 2) habitaciones únicas
         const habitacionesIds = Array.from(new Set(selectedCells.map(s => s.habId)));
 
         const reservaRequest = {
             ingreso: ingreso,
             egreso: egreso,
-            huesped: {
-                tipoDocumento: tipoDoc,
-                documento: numDoc,
-                nombre,
-                apellido,
-                telefono
-            },
+            huesped: { tipoDocumento: tipoDoc, documento: numDoc, nombre, apellido, telefono },
             habitaciones: habitacionesIds
         };
 
         try {
-            const res = await fetch(`${API_URL}/reservas`, {
+            // NUEVO: Decidimos el endpoint según el botón que se apretó
+            const endpoint = accionTipo === 'OCUPAR' ? '/reservas/ocupar' : '/reservas';
+
+            const res = await fetch(`${API_URL}${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(reservaRequest)
@@ -177,13 +167,17 @@ export default function ReservasPage() {
 
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
-                throw new Error(errorData.mensaje || errorData.message || "Error al crear la reserva.");
+                throw new Error(errorData.mensaje || errorData.message || "Error al procesar.");
             }
 
-            showSuccess('¡Éxito!', `Se ha registrado correctamente la reserva.`);
+            const exitoMsg = accionTipo === 'OCUPAR'
+                ? '¡Habitación Ocupada! El Check-in se realizó con éxito.'
+                : '¡Reserva creada con éxito!';
+
+            showSuccess('¡Éxito!', exitoMsg);
         } catch (error) {
             console.error(error);
-            showError('Error al Reservar', error.message);
+            showError('Error', error.message);
         }
     };
 
@@ -199,6 +193,7 @@ export default function ReservasPage() {
         setStep(1);
         setSelectedCells([]);
         setNombre(''); setApellido(''); setTelefono(''); setNumDoc('');
+        setAccionTipo('RESERVAR'); // Resetear acción por defecto
     };
 
     const getHabId = (hab) => hab.idHabitacion || hab.id;
@@ -216,8 +211,7 @@ export default function ReservasPage() {
                 </div>
 
                 <div className={styles.formContainer}>
-
-                    {/* --- PASO 1: FILTROS --- */}
+                    {/* --- PASO 1: FILTROS (Sin cambios) --- */}
                     <div className={styles.gridTop}>
                         <div className={styles.fieldWrapper}>
                             <label>Desde Fecha</label>
@@ -248,11 +242,19 @@ export default function ReservasPage() {
                                     )}
                                 </div>
                                 <button className={styles.btnVolverOrange} onClick={() => setStep(1)}>VOLVER</button>
-                                <button className={styles.btnReservarGreen} onClick={handleIrAReservar}>
+
+                                {/* NUEVO: BOTÓN OCUPAR (Azul) */}
+                                <button className={styles.btnOcuparBlue} onClick={() => handleIniciarProceso('OCUPAR')}>
+                                    OCUPAR ({selectedCells.length})
+                                </button>
+
+                                {/* BOTÓN RESERVAR EXISTENTE (Verde) */}
+                                <button className={styles.btnReservarGreen} onClick={() => handleIniciarProceso('RESERVAR')}>
                                     RESERVAR ({selectedCells.length})
                                 </button>
                             </div>
 
+                            {/* TABLA (Sin cambios en lógica de renderizado) */}
                             <div className={styles.tableWrapper}>
                                 <table className={styles.matrixTable}>
                                     <thead>
@@ -273,13 +275,10 @@ export default function ReservasPage() {
                                             {matrixData.map(hab => {
                                                 const infoDia = hab.estadosPorDia ? hab.estadosPorDia.find(d => d.fecha === fecha) : null;
                                                 const estado = infoDia ? infoDia.estado : 'DISPONIBLE';
-
                                                 const currentId = getHabId(hab);
                                                 const isSelected = selectedCells.some(
                                                     cell => cell.habId === currentId && cell.fecha === fecha
                                                 );
-
-                                                // Lógica para detectar Mantenimiento
                                                 const isMantenimiento = estado === 'MANTENIMIENTO';
 
                                                 return (
@@ -292,12 +291,8 @@ export default function ReservasPage() {
                                                                 `}
                                                             onClick={() => handleCellClick(currentId, fecha, estado, hab.tipo, hab.numero)}
                                                             title={`Hab ${hab.numero}: ${estado}`}
-                                                            // Estilo condicional para Mantenimiento
                                                             style={isMantenimiento ? {
-                                                                backgroundColor: '#E0E0E0',
-                                                                borderColor: '#BDBDBD',
-                                                                cursor: 'not-allowed',
-                                                                color: '#9E9E9E'
+                                                                backgroundColor: '#E0E0E0', borderColor: '#BDBDBD', cursor: 'not-allowed', color: '#9E9E9E'
                                                             } : {}}
                                                         >
                                                             {isSelected ? (
@@ -323,32 +318,11 @@ export default function ReservasPage() {
                             </div>
 
                             <div className={styles.legendContainer}>
-                                <div className={styles.legendItem}>
-                                    <div className={`${styles.checkboxSquare} ${styles.DISPONIBLE}`} style={{width:20, height:20, cursor:'default'}}></div>
-                                    <span>Disponible</span>
-                                </div>
-                                <div className={styles.legendItem}>
-                                    <div className={`${styles.checkboxSquare} ${styles.OCUPADA}`} style={{width:20, height:20, cursor:'default'}}></div>
-                                    <span>Ocupada</span>
-                                </div>
-                                <div className={styles.legendItem}>
-                                    <div className={`${styles.checkboxSquare} ${styles.RESERVADA}`} style={{width:20, height:20, cursor:'default'}}></div>
-                                    <span>Reservada</span>
-                                </div>
-                                <div className={styles.legendItem}>
-                                    {/* Leyenda corregida para que coincida con el estilo gris */}
-                                    <div
-                                        className={`${styles.checkboxSquare} ${styles.MANTENIMIENTO}`}
-                                        style={{
-                                            width:20,
-                                            height:20,
-                                            cursor:'default',
-                                            backgroundColor: '#E0E0E0',
-                                            borderColor: '#BDBDBD'
-                                        }}
-                                    ></div>
-                                    <span>Mantenimiento</span>
-                                </div>
+                                {/* Leyendas (Sin cambios) */}
+                                <div className={styles.legendItem}><div className={`${styles.checkboxSquare} ${styles.DISPONIBLE}`} style={{width:20, height:20, cursor:'default'}}></div><span>Disponible</span></div>
+                                <div className={styles.legendItem}><div className={`${styles.checkboxSquare} ${styles.OCUPADA}`} style={{width:20, height:20, cursor:'default'}}></div><span>Ocupada</span></div>
+                                <div className={styles.legendItem}><div className={`${styles.checkboxSquare} ${styles.RESERVADA}`} style={{width:20, height:20, cursor:'default'}}></div><span>Reservada</span></div>
+                                <div className={styles.legendItem}><div className={`${styles.checkboxSquare} ${styles.MANTENIMIENTO}`} style={{width:20, height:20, cursor:'default', backgroundColor: '#E0E0E0', borderColor: '#BDBDBD'}}></div><span>Mantenimiento</span></div>
                             </div>
                         </div>
                     )}
@@ -356,7 +330,10 @@ export default function ReservasPage() {
                     {/* --- PASO 3: FORMULARIO --- */}
                     {step === 3 && (
                         <div className="animate-fadeIn">
-                            <h3 style={{textAlign:'center', color:'#555'}}>Datos del Cliente</h3>
+                            {/* Titulo dinámico según acción */}
+                            <h3 style={{textAlign:'center', color:'#555'}}>
+                                Datos del Cliente ({accionTipo === 'OCUPAR' ? 'Check-In' : 'Reserva'})
+                            </h3>
 
                             <div className={styles.selectionInfo}>
                                 <p style={{margin: '0 0 10px 0', fontWeight:'bold'}}>Resumen de selección:</p>
@@ -392,7 +369,13 @@ export default function ReservasPage() {
 
                             <div className={styles.footerActions}>
                                 <button className={styles.btnVolverOrange} onClick={() => setStep(2)}>VOLVER</button>
-                                <button className={styles.btnReservarGreen} onClick={handlePreConfirmar}>CONFIRMAR RESERVA</button>
+                                {/* Botón de confirmación con texto dinámico y color según acción */}
+                                <button
+                                    className={accionTipo === 'OCUPAR' ? styles.btnOcuparBlue : styles.btnReservarGreen}
+                                    onClick={handlePreConfirmar}
+                                >
+                                    CONFIRMAR {accionTipo}
+                                </button>
                             </div>
                         </div>
                     )}

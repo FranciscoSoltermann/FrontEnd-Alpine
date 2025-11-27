@@ -325,3 +325,20 @@
         flex-wrap: wrap;
     }
 }
+/* NUEVO: Botón Ocupar (Azul) */
+.btnOcuparBlue {
+    background-color: #2196f3; /* Azul Material Design */
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    text-transform: uppercase;
+    transition: background-color 0.2s;
+}
+
+.btnOcuparBlue:hover {
+    background-color: #1976d2; /* Azul más oscuro al pasar mouse */
+}
