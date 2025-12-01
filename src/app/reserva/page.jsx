@@ -82,29 +82,24 @@ export default function ReservasPage() {
         let msg = "";
 
         if (campo === 'numDoc') {
-            // Ejemplo: Solo números, entre 7 y 8 dígitos
             if (valor && !/^[0-9]{7,8}$/.test(valor)) {
                 msg = "El DNI debe contener solo 7 u 8 números, sin letras ni puntos.";
             }
         }
         if (campo === 'nombre' || campo === 'apellido') {
-            // Ejemplo: Solo letras y espacios
             if (valor && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(valor)) {
                 msg = "Solo se permiten letras.";
             }
         }
         if (campo === 'telefono') {
-            // Ejemplo: Solo números
             if (valor && !/^[0-9]+$/.test(valor)) {
                 msg = "El teléfono debe contener solo números.";
             }
         }
 
-        // Actualizamos estado de errores
         setErrores(prev => ({ ...prev, [campo]: msg }));
     };
 
-    // Wrapper para manejar cambio + validación
     const handleChange = (e, setFunction, campo) => {
         const val = e.target.value;
         setFunction(val);
@@ -192,19 +187,12 @@ export default function ReservasPage() {
         setStep(3);
     };
 
-    // Este evento maneja el submit del formulario nativo
     const onFormSubmit = (e) => {
-        e.preventDefault(); // Evita recarga
-
-        // 1. La validación "required" nativa ya pasó si llegamos aquí.
-
-        // 2. Verificamos si hay errores de formato (rojos) pendientes
+        e.preventDefault();
         const hayErroresFormato = Object.values(errores).some(msg => msg !== "");
         if (hayErroresFormato) {
             return showError("Datos inválidos", "Por favor corrija los campos marcados en rojo.");
         }
-
-        // 3. Todo OK, procedemos a confirmar
         handlePreConfirmar();
     };
 
@@ -270,11 +258,21 @@ export default function ReservasPage() {
                 // 3. Hacer POST por cada tramo
                 for (const tramo of gruposConsecutivos) {
                     const ingreso = tramo[0];
-                    const egreso = tramo[1];
+                    const ultimoDia = tramo[1];
+
+                    // --- CORRECCIÓN DE FECHA: SUMAMOS 1 DÍA AL ÚLTIMO SELECCIONADO ---
+                    const fechaBase = new Date(ultimoDia + "T12:00:00"); // Truco mediodía
+                    fechaBase.setDate(fechaBase.getDate() + 1);
+
+                    const yyyy = fechaBase.getFullYear();
+                    const mm = String(fechaBase.getMonth() + 1).padStart(2, '0');
+                    const dd = String(fechaBase.getDate()).padStart(2, '0');
+                    const egreso = `${yyyy}-${mm}-${dd}`;
+                    // ----------------------------------------------------------------
 
                     const reservaRequest = {
                         ingreso,
-                        egreso,
+                        egreso, // Enviamos el día siguiente real
                         huesped: { tipoDocumento: tipoDoc, documento: numDoc, nombre, apellido, telefono },
                         habitaciones: [habId]
                     };
@@ -294,7 +292,7 @@ export default function ReservasPage() {
                 }
             }
 
-            showSuccess('¡Éxito!', 'Reservas generadas correctamente.');
+            showSuccess('¡Éxito!', 'Operación realizada correctamente.');
 
         } catch (error) {
             console.error(error);
@@ -306,10 +304,25 @@ export default function ReservasPage() {
     const showError = (titulo, desc) => setErrorModal({ isOpen: true, titulo, descripcion: desc });
     const closeError = () => setErrorModal({ ...errorModal, isOpen: false });
     const showSuccess = (titulo, desc) => setSuccessModal({ isOpen: true, titulo, descripcion: desc });
-    const closeSuccess = () => { setSuccessModal({ ...successModal, isOpen: false }); resetFormularioCompleto(); };
     const showConfirmAction = (titulo, desc) => setActionModal({ isOpen: true, titulo, descripcion: desc });
     const closeAction = () => setActionModal({ ...actionModal, isOpen: false });
 
+    // ⭐ CIERRE DE ÉXITO CON AUTO-RECARGA
+    const closeSuccess = () => {
+        setSuccessModal({ ...successModal, isOpen: false });
+
+        // No reseteamos a step 1, nos quedamos en la grilla (Step 2)
+        setStep(2);
+        setSelectedCells([]);
+        setNombre(''); setApellido(''); setTelefono(''); setNumDoc('');
+        setErrores({});
+        setAccionTipo('RESERVAR');
+
+        // Refrescamos los datos para ver los nuevos colores
+        handleBuscar();
+    };
+
+    // (Opcional) Si quieres volver a cero
     const resetFormularioCompleto = () => {
         setStep(1);
         setSelectedCells([]);
@@ -343,7 +356,6 @@ export default function ReservasPage() {
                                 value={fechaDesde}
                                 onChange={(e) => setFechaDesde(e.target.value)}
                                 disabled={step > 1 || loading}
-                                // VALIDACIÓN: Bloquea días anteriores a hoy
                                 min={todayString}
                             />
                         </div>
@@ -355,7 +367,6 @@ export default function ReservasPage() {
                                 value={fechaHasta}
                                 onChange={(e) => setFechaHasta(e.target.value)}
                                 disabled={step > 1 || loading}
-                                // VALIDACIÓN: Bloquea días anteriores a la fecha de inicio
                                 min={fechaDesde || todayString}
                             />
                         </div>
@@ -442,7 +453,6 @@ export default function ReservasPage() {
                                 </ul>
                             </div>
 
-                            {/* [IMPORTANTE] Usamos un FORM para activar la validación nativa "required" */}
                             <form onSubmit={onFormSubmit}>
 
                                 <div className={styles.gridMiddle}>
@@ -464,7 +474,7 @@ export default function ReservasPage() {
                                             className={`${styles.input} ${errores.numDoc ? styles.inputError : ''}`}
                                             value={numDoc}
                                             onChange={(e) => handleChange(e, setNumDoc, 'numDoc')}
-                                            required // Activa "Completa este campo"
+                                            required
                                             placeholder="Ej: 12345678"
                                         />
                                         {errores.numDoc && <div className={styles.errorTooltip}>{errores.numDoc}</div>}
@@ -510,10 +520,8 @@ export default function ReservasPage() {
                                 </div>
 
                                 <div className={styles.footerActions}>
-                                    {/* Type Button para que no envíe el form */}
                                     <button type="button" className={styles.btnVolverOrange} onClick={() => setStep(2)}>VOLVER</button>
 
-                                    {/* Type Submit para activar las validaciones */}
                                     <button
                                         type="submit"
                                         className={accionTipo === 'OCUPAR' ? styles.btnOcuparBlue : styles.btnReservarGreen}

@@ -342,11 +342,7 @@
 .btnOcuparBlue:hover {
     background-color: #1976d2; /* Azul más oscuro al pasar mouse */
 }
-/* ... Tus estilos anteriores ... */
 
-/* --- VALIDACIONES --- */
-
-/* Borde rojo cuando hay error de formato */
 .inputError {
     border: 1px solid #dc3545 !important;
     background-color: #fff8f8;
