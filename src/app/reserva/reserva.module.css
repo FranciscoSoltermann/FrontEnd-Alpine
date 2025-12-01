@@ -342,3 +342,63 @@
 .btnOcuparBlue:hover {
     background-color: #1976d2; /* Azul más oscuro al pasar mouse */
 }
+/* ... Tus estilos anteriores ... */
+
+/* --- VALIDACIONES --- */
+
+/* Borde rojo cuando hay error de formato */
+.inputError {
+    border: 1px solid #dc3545 !important;
+    background-color: #fff8f8;
+}
+
+/* Texto de error pequeño debajo del input (opcional) */
+.errorText {
+    color: #dc3545;
+    font-size: 0.8rem;
+    margin-top: 4px;
+}
+
+/* GLOBITO DE ERROR (Estilo Imagen 1) */
+.errorTooltip {
+    background-color: #fce4e4; /* Fondo rosado */
+    color: #cc0000;           /* Texto rojo */
+    border: 1px solid #f5c6cb;
+    padding: 8px 10px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    margin-top: 6px;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    animation: fadeInTooltip 0.3s ease-in-out;
+}
+
+/* Flechita del globito apuntando arriba */
+.errorTooltip::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 15px;
+    border-width: 0 6px 6px;
+    border-style: solid;
+    border-color: #f5c6cb transparent;
+    display: block;
+    width: 0;
+}
+
+.errorTooltip::after {
+    content: "";
+    position: absolute;
+    top: -4px;
+    left: 16px;
+    border-width: 0 5px 5px;
+    border-style: solid;
+    border-color: #fce4e4 transparent;
+    display: block;
+    width: 0;
+}
+
+@keyframes fadeInTooltip {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
