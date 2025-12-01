@@ -12,13 +12,40 @@ import styles from './reserva.module.css';
 // URL de tu API
 const API_URL = "http://localhost:8080/api";
 
+/**
+ * Helpers para trabajar con fechas
+ */
+const parseDateLocal = (dateStr) => {
+    if (!dateStr) return null;
+    const parts = dateStr.split('-').map(Number);
+    if (parts.length !== 3) return null;
+    const [y, m, d] = parts;
+    return new Date(y, m - 1, d);
+};
+
+const formatDateLocal = (date) => {
+    if (!date) return '';
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+};
+
+// Obtener fecha de hoy string YYYY-MM-DD para los inputs date
+const getTodayString = () => {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 export default function ReservasPage() {
+    const todayString = getTodayString();
 
     // --- ESTADOS ---
     const [step, setStep] = useState(1);
-
-    // NUEVO: Estado para saber qué botón apretó el usuario
-    const [accionTipo, setAccionTipo] = useState('RESERVAR'); // 'RESERVAR' o 'OCUPAR'
+    const [accionTipo, setAccionTipo] = useState('RESERVAR');
 
     // Datos dinámicos
     const [habitaciones, setHabitaciones] = useState([]);
@@ -45,6 +72,45 @@ export default function ReservasPage() {
     const [apellido, setApellido] = useState('');
     const [telefono, setTelefono] = useState('');
 
+    // Estado para errores de formato (Caja Roja)
+    const [errores, setErrores] = useState({});
+
+    // ============================
+    // VALIDACIÓN EN TIEMPO REAL (FORMATO)
+    // ============================
+    const validarInput = (campo, valor) => {
+        let msg = "";
+
+        if (campo === 'numDoc') {
+            // Ejemplo: Solo números, entre 7 y 8 dígitos
+            if (valor && !/^[0-9]{7,8}$/.test(valor)) {
+                msg = "El DNI debe contener solo 7 u 8 números, sin letras ni puntos.";
+            }
+        }
+        if (campo === 'nombre' || campo === 'apellido') {
+            // Ejemplo: Solo letras y espacios
+            if (valor && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(valor)) {
+                msg = "Solo se permiten letras.";
+            }
+        }
+        if (campo === 'telefono') {
+            // Ejemplo: Solo números
+            if (valor && !/^[0-9]+$/.test(valor)) {
+                msg = "El teléfono debe contener solo números.";
+            }
+        }
+
+        // Actualizamos estado de errores
+        setErrores(prev => ({ ...prev, [campo]: msg }));
+    };
+
+    // Wrapper para manejar cambio + validación
+    const handleChange = (e, setFunction, campo) => {
+        const val = e.target.value;
+        setFunction(val);
+        validarInput(campo, val);
+    };
+
     // ======================
     //   1. BUSCAR DISPONIBILIDAD
     // ======================
@@ -52,11 +118,12 @@ export default function ReservasPage() {
         if (!fechaDesde) return showError('Faltan datos', 'Por favor seleccione la fecha "Desde".');
         if (!fechaHasta) return showError('Faltan datos', 'Por favor seleccione la fecha "Hasta".');
 
-        const fDesde = new Date(fechaDesde);
-        const fHasta = new Date(fechaHasta);
-        const fDesdeAjustada = new Date(fDesde.getTime() + fDesde.getTimezoneOffset() * 60000);
+        // Validaciones de fecha extra (Backend safety)
+        if (fechaDesde < todayString) return showError('Fecha inválida', 'No se puede reservar en el pasado.');
+        if (fechaDesde > fechaHasta) return showError('Fecha inválida', 'La fecha de ingreso no puede ser mayor a la salida.');
 
-        if (fDesde > fHasta) return showError('Fecha inválida', 'La fecha de ingreso no puede ser posterior a la fecha de salida.');
+        const fDesde = parseDateLocal(fechaDesde);
+        const fHasta = parseDateLocal(fechaHasta);
 
         setLoading(true);
 
@@ -71,11 +138,16 @@ export default function ReservasPage() {
 
             const dataBackend = await res.json();
 
+            // Generar rango de días
             const dias = [];
-            let currentDia = new Date(fDesdeAjustada);
-            while (currentDia <= fHasta) {
-                dias.push(new Date(currentDia).toISOString().split('T')[0]);
-                currentDia.setDate(currentDia.getDate() + 1);
+            const current = new Date(fDesde.getTime());
+            const end = new Date(fHasta.getTime());
+            current.setHours(0,0,0,0);
+            end.setHours(0,0,0,0);
+
+            while (current <= end) {
+                dias.push(formatDateLocal(current));
+                current.setDate(current.getDate() + 1);
             }
             setDaysRange(dias);
 
@@ -102,39 +174,46 @@ export default function ReservasPage() {
     // ======================
     const handleCellClick = (habId, fecha, estado, tipoHabitacion, numero) => {
         if (estado !== 'DISPONIBLE') return;
-
         setSelectedCells(prev => {
             const exists = prev.find(item => item.habId === habId && item.fecha === fecha);
-            if (exists) {
-                return prev.filter(item => item !== exists);
-            } else {
-                return [...prev, { habId, fecha, tipoHabitacion, numero }];
-            }
+            if (exists) return prev.filter(item => item !== exists);
+            return [...prev, { habId, fecha, tipoHabitacion, numero }];
         });
     };
 
     // ======================
-    //   NAVEGACIÓN Y CONFIRMACIÓN
+    //   NAVEGACIÓN Y SUBMIT
     // ======================
-
-    // NUEVO: Función genérica para ir al paso 3 dependiendo de la acción
     const handleIniciarProceso = (tipoAccion) => {
         if (selectedCells.length === 0) {
-            return showError('Selección requerida', "Por favor, seleccione al menos una celda 'Disponible'.");
+            return showError('Selección requerida', "Seleccione al menos una celda disponible.");
         }
-        setAccionTipo(tipoAccion); // Guardamos si es 'RESERVAR' u 'OCUPAR'
+        setAccionTipo(tipoAccion);
         setStep(3);
     };
 
-    const handlePreConfirmar = () => {
-        if (!nombre || !apellido || !numDoc) return showError('Datos incompletos', "Complete los datos obligatorios.");
+    // Este evento maneja el submit del formulario nativo
+    const onFormSubmit = (e) => {
+        e.preventDefault(); // Evita recarga
 
-        // Texto dinámico según la acción
+        // 1. La validación "required" nativa ya pasó si llegamos aquí.
+
+        // 2. Verificamos si hay errores de formato (rojos) pendientes
+        const hayErroresFormato = Object.values(errores).some(msg => msg !== "");
+        if (hayErroresFormato) {
+            return showError("Datos inválidos", "Por favor corrija los campos marcados en rojo.");
+        }
+
+        // 3. Todo OK, procedemos a confirmar
+        handlePreConfirmar();
+    };
+
+    const handlePreConfirmar = () => {
         const accionTexto = accionTipo === 'OCUPAR' ? 'ocupar' : 'reservar';
         const tituloTexto = accionTipo === 'OCUPAR' ? 'Confirmar Ocupación' : 'Confirmar Reserva';
 
         const msg = selectedCells.length === 1
-            ? `¿Desea ${accionTexto} la habitación ${selectedCells[0].numero} para el día ${selectedCells[0].fecha}?`
+            ? `¿Desea ${accionTexto} la habitación ${selectedCells[0].numero} para ${selectedCells[0].fecha}?`
             : `¿Desea confirmar la acción para ${selectedCells.length} días seleccionados?`;
 
         showConfirmAction(tituloTexto, msg);
@@ -143,38 +222,80 @@ export default function ReservasPage() {
     const handleConfirmarReal = async () => {
         closeAction();
 
-        const fechas = selectedCells.map(s => s.fecha).sort();
-        const ingreso = fechas[0];
-        const egreso = fechas[fechas.length - 1];
-        const habitacionesIds = Array.from(new Set(selectedCells.map(s => s.habId)));
-
-        const reservaRequest = {
-            ingreso: ingreso,
-            egreso: egreso,
-            huesped: { tipoDocumento: tipoDoc, documento: numDoc, nombre, apellido, telefono },
-            habitaciones: habitacionesIds
-        };
-
         try {
-            // NUEVO: Decidimos el endpoint según el botón que se apretó
-            const endpoint = accionTipo === 'OCUPAR' ? '/reservas/ocupar' : '/reservas';
+            // 1. Agrupar por habitación
+            const gruposPorHabitacion = {};
 
-            const res = await fetch(`${API_URL}${endpoint}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(reservaRequest)
+            selectedCells.forEach(sel => {
+                if (!gruposPorHabitacion[sel.habId]) {
+                    gruposPorHabitacion[sel.habId] = [];
+                }
+                gruposPorHabitacion[sel.habId].push(sel.fecha);
             });
 
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => ({}));
-                throw new Error(errorData.mensaje || errorData.message || "Error al procesar.");
+            // 2. Procesar cada habitación
+            for (const habId in gruposPorHabitacion) {
+
+                // Ordenar fechas
+                const fechasOrdenadas = gruposPorHabitacion[habId].sort();
+                const gruposConsecutivos = [];
+
+                let inicio = fechasOrdenadas[0];
+                let previo = fechasOrdenadas[0];
+
+                for (let i = 1; i < fechasOrdenadas.length; i++) {
+                    const actual = fechasOrdenadas[i];
+
+                    const dPrev = new Date(previo);
+                    const dActual = new Date(actual);
+
+                    const diff = (dActual - dPrev) / (1000 * 60 * 60 * 24);
+
+                    if (diff === 1) {
+                        // seguimos el tramo
+                        previo = actual;
+                    } else {
+                        // cerrar tramo anterior
+                        gruposConsecutivos.push([inicio, previo]);
+
+                        // iniciar nuevo
+                        inicio = actual;
+                        previo = actual;
+                    }
+                }
+
+                // cerrar último tramo
+                gruposConsecutivos.push([inicio, previo]);
+
+                // 3. Hacer POST por cada tramo
+                for (const tramo of gruposConsecutivos) {
+                    const ingreso = tramo[0];
+                    const egreso = tramo[1];
+
+                    const reservaRequest = {
+                        ingreso,
+                        egreso,
+                        huesped: { tipoDocumento: tipoDoc, documento: numDoc, nombre, apellido, telefono },
+                        habitaciones: [habId]
+                    };
+
+                    const endpoint = accionTipo === 'OCUPAR' ? '/reservas/ocupar' : '/reservas';
+
+                    const res = await fetch(`${API_URL}${endpoint}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(reservaRequest)
+                    });
+
+                    if (!res.ok) {
+                        const errorData = await res.json().catch(() => ({}));
+                        throw new Error(errorData.mensaje || "Error al procesar una de las reservas.");
+                    }
+                }
             }
 
-            const exitoMsg = accionTipo === 'OCUPAR'
-                ? '¡Habitación Ocupada! El Check-in se realizó con éxito.'
-                : '¡Reserva creada con éxito!';
+            showSuccess('¡Éxito!', 'Reservas generadas correctamente.');
 
-            showSuccess('¡Éxito!', exitoMsg);
         } catch (error) {
             console.error(error);
             showError('Error', error.message);
@@ -193,7 +314,8 @@ export default function ReservasPage() {
         setStep(1);
         setSelectedCells([]);
         setNombre(''); setApellido(''); setTelefono(''); setNumDoc('');
-        setAccionTipo('RESERVAR'); // Resetear acción por defecto
+        setErrores({});
+        setAccionTipo('RESERVAR');
     };
 
     const getHabId = (hab) => hab.idHabitacion || hab.id;
@@ -205,66 +327,72 @@ export default function ReservasPage() {
             {actionModal.isOpen && <ActionModal titulo={actionModal.titulo} descripcion={actionModal.descripcion} onCancel={closeAction} onConfirm={handleConfirmarReal} confirmText="Aceptar" />}
 
             <div className={styles.container}>
-
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <h1 className={styles.title} style={{marginTop:'10px'}}>DISPONIBILIDAD DE HABITACIONES</h1>
+                    <h1 className={styles.title} style={{ marginTop: '10px' }}>DISPONIBILIDAD DE HABITACIONES</h1>
                 </div>
 
                 <div className={styles.formContainer}>
-                    {/* --- PASO 1: FILTROS (Sin cambios) --- */}
+
+                    {/* --- PASO 1: FECHAS --- */}
                     <div className={styles.gridTop}>
                         <div className={styles.fieldWrapper}>
                             <label>Desde Fecha</label>
-                            <input type="date" className={styles.input} value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} disabled={step > 1 || loading} />
+                            <input
+                                type="date"
+                                className={styles.input}
+                                value={fechaDesde}
+                                onChange={(e) => setFechaDesde(e.target.value)}
+                                disabled={step > 1 || loading}
+                                // VALIDACIÓN: Bloquea días anteriores a hoy
+                                min={todayString}
+                            />
                         </div>
                         <div className={styles.fieldWrapper}>
                             <label>Hasta Fecha</label>
-                            <input type="date" className={styles.input} value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} disabled={step > 1 || loading} />
+                            <input
+                                type="date"
+                                className={styles.input}
+                                value={fechaHasta}
+                                onChange={(e) => setFechaHasta(e.target.value)}
+                                disabled={step > 1 || loading}
+                                // VALIDACIÓN: Bloquea días anteriores a la fecha de inicio
+                                min={fechaDesde || todayString}
+                            />
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px' }}>
-                            {step === 1 && (
-                                <button className={styles.btnBuscar} onClick={handleBuscar} disabled={loading}>
-                                    {loading ? "CARGANDO..." : "BUSCAR"}
-                                </button>
-                            )}
-                        </div>
+
+                        {step === 1 && (
+                            <button className={styles.btnBuscar} onClick={handleBuscar} disabled={loading}>
+                                {loading ? "CARGANDO..." : "BUSCAR"}
+                            </button>
+                        )}
                     </div>
 
-                    {/* --- PASO 2: MATRIZ DE ESTADO --- */}
+                    {/* --- PASO 2: MATRIZ --- */}
                     {step === 2 && (
-                        <div className="animate-fadeIn">
+                        <>
                             <div className={styles.topActions}>
-                                <div style={{flex: 1, display: 'flex', alignItems: 'center'}}>
+                                <div style={{ flex: 1 }}>
                                     {selectedCells.length > 0 && (
-                                        <span style={{fontWeight:'bold', color:'#2196f3'}}>
+                                        <span style={{ fontWeight: 'bold', color: '#2196f3' }}>
                                             {selectedCells.length} día(s) seleccionado(s)
                                         </span>
                                     )}
                                 </div>
                                 <button className={styles.btnVolverOrange} onClick={() => setStep(1)}>VOLVER</button>
-
-                                {/* NUEVO: BOTÓN OCUPAR (Azul) */}
                                 <button className={styles.btnOcuparBlue} onClick={() => handleIniciarProceso('OCUPAR')}>
                                     OCUPAR ({selectedCells.length})
                                 </button>
-
-                                {/* BOTÓN RESERVAR EXISTENTE (Verde) */}
                                 <button className={styles.btnReservarGreen} onClick={() => handleIniciarProceso('RESERVAR')}>
                                     RESERVAR ({selectedCells.length})
                                 </button>
                             </div>
-
-                            {/* TABLA (Sin cambios en lógica de renderizado) */}
                             <div className={styles.tableWrapper}>
                                 <table className={styles.matrixTable}>
                                     <thead>
                                     <tr>
                                         <th className={styles.stickyCol}>Fecha / Habitación</th>
                                         {habitaciones.map(hab => (
-                                            <th key={getHabId(hab)}>
-                                                {hab.tipo} <br/>
-                                                <small style={{fontSize:'0.85em', color:'#555'}}>Hab. {hab.numero}</small>
-                                            </th>
+                                            <th key={getHabId(hab)}>{hab.tipo}<br/><small>Hab. {hab.numero}</small></th>
                                         ))}
                                     </tr>
                                     </thead>
@@ -273,40 +401,17 @@ export default function ReservasPage() {
                                         <tr key={fecha}>
                                             <td className={styles.stickyCol}><strong>{fecha}</strong></td>
                                             {matrixData.map(hab => {
-                                                const infoDia = hab.estadosPorDia ? hab.estadosPorDia.find(d => d.fecha === fecha) : null;
-                                                const estado = infoDia ? infoDia.estado : 'DISPONIBLE';
+                                                const infoDia = hab.estadosPorDia?.find(d => d.fecha === fecha);
+                                                const estado = infoDia?.estado || 'DISPONIBLE';
                                                 const currentId = getHabId(hab);
-                                                const isSelected = selectedCells.some(
-                                                    cell => cell.habId === currentId && cell.fecha === fecha
-                                                );
-                                                const isMantenimiento = estado === 'MANTENIMIENTO';
-
+                                                const isSelected = selectedCells.some(c => c.habId === currentId && c.fecha === fecha);
                                                 return (
                                                     <td key={`${currentId}-${fecha}`} className={styles.cellCenter}>
                                                         <div
-                                                            className={`
-                                                                    ${styles.checkboxSquare} 
-                                                                    ${styles[estado] || styles.DISPONIBLE} 
-                                                                    ${isSelected ? styles.selected : ''}
-                                                                `}
+                                                            className={`${styles.checkboxSquare} ${styles[estado] || styles.DISPONIBLE} ${isSelected ? styles.selected : ''}`}
                                                             onClick={() => handleCellClick(currentId, fecha, estado, hab.tipo, hab.numero)}
-                                                            title={`Hab ${hab.numero}: ${estado}`}
-                                                            style={isMantenimiento ? {
-                                                                backgroundColor: '#E0E0E0', borderColor: '#BDBDBD', cursor: 'not-allowed', color: '#9E9E9E'
-                                                            } : {}}
                                                         >
-                                                            {isSelected ? (
-                                                                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-                                                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                                                </svg>
-                                                            ) : estado === 'DISPONIBLE' ? (
-                                                                <span style={{opacity:0.2}}>+</span>
-                                                            ) : (
-                                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                                                </svg>
-                                                            )}
+                                                            {isSelected ? "✓" : estado === 'DISPONIBLE' ? "+" : "x"}
                                                         </div>
                                                     </td>
                                                 );
@@ -316,67 +421,107 @@ export default function ReservasPage() {
                                     </tbody>
                                 </table>
                             </div>
-
-                            <div className={styles.legendContainer}>
-                                {/* Leyendas (Sin cambios) */}
-                                <div className={styles.legendItem}><div className={`${styles.checkboxSquare} ${styles.DISPONIBLE}`} style={{width:20, height:20, cursor:'default'}}></div><span>Disponible</span></div>
-                                <div className={styles.legendItem}><div className={`${styles.checkboxSquare} ${styles.OCUPADA}`} style={{width:20, height:20, cursor:'default'}}></div><span>Ocupada</span></div>
-                                <div className={styles.legendItem}><div className={`${styles.checkboxSquare} ${styles.RESERVADA}`} style={{width:20, height:20, cursor:'default'}}></div><span>Reservada</span></div>
-                                <div className={styles.legendItem}><div className={`${styles.checkboxSquare} ${styles.MANTENIMIENTO}`} style={{width:20, height:20, cursor:'default', backgroundColor: '#E0E0E0', borderColor: '#BDBDBD'}}></div><span>Mantenimiento</span></div>
-                            </div>
-                        </div>
+                        </>
                     )}
 
                     {/* --- PASO 3: FORMULARIO --- */}
                     {step === 3 && (
-                        <div className="animate-fadeIn">
-                            {/* Titulo dinámico según acción */}
-                            <h3 style={{textAlign:'center', color:'#555'}}>
-                                Datos del Cliente ({accionTipo === 'OCUPAR' ? 'Check-In' : 'Reserva'})
+                        <div style={{ animation: "fadeIn 0.3s" }}>
+                            <h3 style={{ textAlign: 'center', color: '#555' }}>
+                                Datos del Cliente ({accionTipo})
                             </h3>
 
                             <div className={styles.selectionInfo}>
-                                <p style={{margin: '0 0 10px 0', fontWeight:'bold'}}>Resumen de selección:</p>
-                                <ul style={{listStyle:'none', padding:0, margin:0, maxHeight:'150px', overflowY:'auto', border:'1px solid #e0e0e0', background:'#f9f9f9', borderRadius:'4px'}}>
-                                    {selectedCells.map((item, idx) => (
-                                        <li key={idx} style={{padding:'8px 12px', borderBottom:'1px solid #eee', fontSize:'0.9rem', display:'flex', justifyContent:'space-between'}}>
-                                            <span>{item.fecha}</span>
-                                            <strong>Hab. {item.numero} ({item.tipoHabitacion})</strong>
+                                <p><b>Resumen:</b></p>
+                                <ul style={{ listStyle: 'none', padding: 0 }}>
+                                    {selectedCells.map((s, i) => (
+                                        <li key={i} style={{ padding: '5px 0', borderBottom: '1px solid #ddd' }}>
+                                            {s.fecha} — Hab. {s.numero} ({s.tipoHabitacion})
                                         </li>
                                     ))}
                                 </ul>
                             </div>
 
-                            <div className={styles.gridMiddle} style={{marginTop:'20px'}}>
-                                <div className={styles.fieldWrapper}>
-                                    <label>Tipo Doc</label>
-                                    <select className={styles.select} value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)}>
-                                        <option value="DNI">DNI</option>
-                                        <option value="PASAPORTE">PASAPORTE</option>
-                                    </select>
-                                </div>
-                                <div className={styles.fieldWrapper}>
-                                    <label>Nro Doc</label>
-                                    <input className={styles.input} value={numDoc} onChange={(e) => setNumDoc(e.target.value)} placeholder="Ej: 12345678" />
-                                </div>
-                            </div>
+                            {/* [IMPORTANTE] Usamos un FORM para activar la validación nativa "required" */}
+                            <form onSubmit={onFormSubmit}>
 
-                            <div className={styles.gridBottom}>
-                                <div className={styles.fieldWrapper}><label>Nombre</label><input className={styles.input} value={nombre} onChange={(e) => setNombre(e.target.value)} /></div>
-                                <div className={styles.fieldWrapper}><label>Apellido</label><input className={styles.input} value={apellido} onChange={(e) => setApellido(e.target.value)} /></div>
-                                <div className={styles.fieldWrapper}><label>Teléfono</label><input className={styles.input} value={telefono} onChange={(e) => setTelefono(e.target.value)} /></div>
-                            </div>
+                                <div className={styles.gridMiddle}>
+                                    <div className={styles.fieldWrapper}>
+                                        <label>Tipo Doc</label>
+                                        <select className={styles.select} value={tipoDoc} onChange={e => setTipoDoc(e.target.value)}>
+                                            <option value="DNI">DNI</option>
+                                            <option value="PASAPORTE">PASAPORTE</option>
+                                            <option value="LE">LE</option>
+                                            <option value="LC">LC</option>
+                                            <option value="OTRO">OTRO</option>
+                                        </select>
+                                    </div>
 
-                            <div className={styles.footerActions}>
-                                <button className={styles.btnVolverOrange} onClick={() => setStep(2)}>VOLVER</button>
-                                {/* Botón de confirmación con texto dinámico y color según acción */}
-                                <button
-                                    className={accionTipo === 'OCUPAR' ? styles.btnOcuparBlue : styles.btnReservarGreen}
-                                    onClick={handlePreConfirmar}
-                                >
-                                    CONFIRMAR {accionTipo}
-                                </button>
-                            </div>
+                                    {/* NRO DOC */}
+                                    <div className={styles.fieldWrapper}>
+                                        <label>Nro Doc (*)</label>
+                                        <input
+                                            className={`${styles.input} ${errores.numDoc ? styles.inputError : ''}`}
+                                            value={numDoc}
+                                            onChange={(e) => handleChange(e, setNumDoc, 'numDoc')}
+                                            required // Activa "Completa este campo"
+                                            placeholder="Ej: 12345678"
+                                        />
+                                        {errores.numDoc && <div className={styles.errorTooltip}>{errores.numDoc}</div>}
+                                    </div>
+                                </div>
+
+                                <div className={styles.gridBottom}>
+                                    {/* NOMBRE */}
+                                    <div className={styles.fieldWrapper}>
+                                        <label>Nombre (*)</label>
+                                        <input
+                                            className={`${styles.input} ${errores.nombre ? styles.inputError : ''}`}
+                                            value={nombre}
+                                            onChange={(e) => handleChange(e, setNombre, 'nombre')}
+                                            required
+                                        />
+                                        {errores.nombre && <div className={styles.errorTooltip}>{errores.nombre}</div>}
+                                    </div>
+
+                                    {/* APELLIDO */}
+                                    <div className={styles.fieldWrapper}>
+                                        <label>Apellido (*)</label>
+                                        <input
+                                            className={`${styles.input} ${errores.apellido ? styles.inputError : ''}`}
+                                            value={apellido}
+                                            onChange={(e) => handleChange(e, setApellido, 'apellido')}
+                                            required
+                                        />
+                                        {errores.apellido && <div className={styles.errorTooltip}>{errores.apellido}</div>}
+                                    </div>
+
+                                    {/* TELÉFONO */}
+                                    <div className={styles.fieldWrapper}>
+                                        <label>Teléfono (*)</label>
+                                        <input
+                                            className={`${styles.input} ${errores.telefono ? styles.inputError : ''}`}
+                                            value={telefono}
+                                            onChange={(e) => handleChange(e, setTelefono, 'telefono')}
+                                            required
+                                        />
+                                        {errores.telefono && <div className={styles.errorTooltip}>{errores.telefono}</div>}
+                                    </div>
+                                </div>
+
+                                <div className={styles.footerActions}>
+                                    {/* Type Button para que no envíe el form */}
+                                    <button type="button" className={styles.btnVolverOrange} onClick={() => setStep(2)}>VOLVER</button>
+
+                                    {/* Type Submit para activar las validaciones */}
+                                    <button
+                                        type="submit"
+                                        className={accionTipo === 'OCUPAR' ? styles.btnOcuparBlue : styles.btnReservarGreen}
+                                    >
+                                        CONFIRMAR {accionTipo}
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     )}
                 </div>
