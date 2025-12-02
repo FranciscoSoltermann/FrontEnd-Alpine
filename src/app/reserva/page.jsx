@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation'; // <--- 1. IMPORTAR ROUTER
 import ProtectedRoute from '../components/layout/ProtectedRoute';
 import ErrorModal from '../components/ui/modals/ErrorModal';
 import SuccessModal from '../components/ui/modals/SuccessModal';
@@ -9,7 +10,7 @@ import styles from './reserva.module.css';
 
 const API_URL = "http://localhost:8080/api";
 
-// --- HELPERS ---
+// --- HELPERS (Sin cambios) ---
 const parseDateLocal = (dateStr) => {
     if (!dateStr) return null;
     const parts = dateStr.split('-').map(Number);
@@ -32,6 +33,7 @@ const getTodayString = () => {
 };
 
 export default function ReservasPage() {
+    const router = useRouter(); // <--- 2. INICIALIZAR ROUTER
     const todayString = getTodayString();
 
     const [step, setStep] = useState(1);
@@ -57,16 +59,11 @@ export default function ReservasPage() {
         tipoDoc: 'DNI', numDoc: '', nombre: '', apellido: '', telefono: ''
     });
 
-    // Estado para búsqueda
     const [buscandoTitular, setBuscandoTitular] = useState(false);
-
-    // Ocupantes por Habitación
     const [ocupantesPorHab, setOcupantesPorHab] = useState({});
-
-    // Estado para errores de validación
     const [errores, setErrores] = useState({});
 
-    // --- VALIDACIONES ---
+    // --- VALIDACIONES (Sin cambios importantes) ---
     const validarInput = (campo, valor) => {
         let msg = "";
         if (campo === 'numDoc' && valor && !/^[0-9]{7,8}$/.test(valor)) {
@@ -86,7 +83,7 @@ export default function ReservasPage() {
         validarInput(campo, valor);
     };
 
-    // --- NUEVO: BUSCAR TITULAR ---
+    // --- 3. LÓGICA DE BÚSQUEDA MODIFICADA ---
     const buscarTitular = async () => {
         if (!titular.numDoc || titular.numDoc.length < 6) {
             setErrores(prev => ({...prev, numDoc: "Ingrese un DNI válido para buscar."}));
@@ -95,7 +92,9 @@ export default function ReservasPage() {
         setBuscandoTitular(true);
         try {
             const res = await fetch(`${API_URL}/huespedes/buscar-por-dni?dni=${titular.numDoc}`);
+
             if (res.ok) {
+                // --- CASO 1: ENCONTRADO ---
                 const data = await res.json();
                 setTitular(prev => ({
                     ...prev,
@@ -104,20 +103,43 @@ export default function ReservasPage() {
                     telefono: data.telefono || '',
                     tipoDoc: data.tipoDocumento || 'DNI'
                 }));
-                // Limpiar errores visuales
                 setErrores(prev => ({ ...prev, nombre: '', apellido: '', telefono: '', numDoc: '' }));
+
             } else if (res.status === 404) {
-                // No encontrado: limpiamos para que escriba uno nuevo
+                // --- CASO 2: NO ENCONTRADO (Bloqueo y Redirección) ---
+
+                // Limpiamos los campos para que no pueda confirmar con datos vacíos o parciales
                 setTitular(prev => ({ ...prev, nombre: '', apellido: '', telefono: '' }));
+
+                // Abrimos el modal de acción forzando la decisión
+                setActionModal({
+                    isOpen: true,
+                    titulo: "Huésped no registrado",
+                    descripcion: `El DNI ${titular.numDoc} no existe. Para continuar, debe registrar al huésped.`,
+                    confirmText: "Ir a Alta Huésped",
+                    cancelText: "Cancelar / Reintentar",
+                    onConfirm: () => {
+                        // Redirige a la página de alta
+                        router.push('/darDeAlta');
+                        closeAction();
+                    },
+                    onCancel: () => {
+                        // Simplemente cierra el modal y permite corregir el DNI
+                        closeAction();
+                    }
+                });
+            } else {
+                throw new Error("Error en el servidor al buscar.");
             }
         } catch (e) {
             console.error(e);
+            showError("Error", "No se pudo realizar la búsqueda.");
         } finally {
             setBuscandoTitular(false);
         }
     };
 
-    // --- HANDLERS OCUPANTES ---
+    // --- HANDLERS OCUPANTES (Sin cambios) ---
     const agregarOcupante = (habId, capacidadMax) => {
         setOcupantesPorHab(prev => {
             const lista = prev[habId] || [];
@@ -142,7 +164,7 @@ export default function ReservasPage() {
         });
     };
 
-    // --- LOGICA PRINCIPAL ---
+    // --- LOGICA PRINCIPAL (Sin cambios mayores) ---
     const handleBuscar = async () => {
         if (!fechaDesde || !fechaHasta) return showError('Faltan datos', 'Seleccione fechas.');
         if (fechaDesde < todayString) return showError('Error', 'No se puede reservar en el pasado.');
@@ -198,6 +220,12 @@ export default function ReservasPage() {
 
     const onFormSubmit = (e) => {
         e.preventDefault();
+
+        // VALIDACIÓN EXTRA: Si no tiene nombre/apellido porque falló la búsqueda, no deja avanzar
+        if (!titular.nombre || !titular.apellido) {
+            return showError("Error", "Debe buscar y seleccionar un titular válido.");
+        }
+
         if (Object.values(errores).some(m => m)) return showError("Error", "Corrija los campos en rojo.");
         handlePreConfirmar();
     };
@@ -207,6 +235,11 @@ export default function ReservasPage() {
     };
 
     const handleConfirmarReal = async () => {
+        // En el Action Modal original, si venía de "No encontrado", onConfirm hace redirect.
+        // Si viene de "Confirmar Reserva", hace esto.
+        // Como compartimos el estado 'actionModal', debemos asegurarnos de qué estamos confirmando.
+        // Pero como pasamos la función onConfirm directamente al setActionModal en buscarTitular, no hay conflicto.
+
         closeAction();
         try {
             const grupos = {};
@@ -275,7 +308,15 @@ export default function ReservasPage() {
         setOcupantesPorHab({}); setErrores({}); setAccionTipo('RESERVAR');
         handleBuscar();
     };
-    const showConfirmAction = (t, d) => setActionModal({ isOpen: true, titulo: t, descripcion: d });
+    const showConfirmAction = (t, d) => setActionModal({
+        isOpen: true,
+        titulo: t,
+        descripcion: d,
+        onConfirm: handleConfirmarReal, // Acción por defecto (Confirmar Reserva)
+        confirmText: "Aceptar",
+        cancelText: "Cancelar"
+    });
+
     const closeAction = () => setActionModal({ ...actionModal, isOpen: false });
     const getHabId = (h) => h.idHabitacion || h.id;
     const habsSeleccionadasUnicas = habitaciones.filter(h => selectedCells.some(s => s.habId === getHabId(h)));
@@ -284,13 +325,24 @@ export default function ReservasPage() {
         <ProtectedRoute>
             {errorModal.isOpen && <ErrorModal titulo={errorModal.titulo} descripcion={errorModal.descripcion} onClose={closeError} />}
             {successModal.isOpen && <SuccessModal titulo={successModal.titulo} descripcion={successModal.descripcion} onClose={closeSuccess} />}
-            {actionModal.isOpen && <ActionModal titulo={actionModal.titulo} descripcion={actionModal.descripcion} onCancel={closeAction} onConfirm={handleConfirmarReal} confirmText="Aceptar" />}
+
+            {/* Modal de Acción Dinámico (sirve para Confirmar Reserva O Redirigir a Alta) */}
+            {actionModal.isOpen && (
+                <ActionModal
+                    titulo={actionModal.titulo}
+                    descripcion={actionModal.descripcion}
+                    onCancel={actionModal.onCancel || closeAction}
+                    onConfirm={actionModal.onConfirm}
+                    confirmText={actionModal.confirmText || "Aceptar"}
+                    cancelText={actionModal.cancelText || "Cancelar"}
+                />
+            )}
 
             <div className={styles.container}>
                 <h1 className={styles.title}>DISPONIBILIDAD DE HABITACIONES</h1>
                 <div className={styles.formContainer}>
 
-                    {/* PASO 1 y 2 */}
+                    {/* PASO 1 y 2 (Sin cambios visuales) */}
                     {step === 1 && (
                         <div className={styles.gridTop}>
                             <div className={styles.fieldWrapper}>
@@ -397,41 +449,39 @@ export default function ReservasPage() {
                                         </div>
                                     </div>
 
+                                    {/* CAMPOS DE SOLO LECTURA (Deshabilitados para obligar a usar el buscador) */}
                                     <div className={styles.gridBottom}>
                                         <div className={styles.fieldWrapper}>
                                             <label>Nombre (*)</label>
                                             <input
-                                                className={`${styles.input} ${errores.nombre ? styles.inputError : ''}`}
+                                                className={`${styles.input} ${styles.readOnly}`}
                                                 value={titular.nombre}
-                                                onChange={e => handleTitularChange('nombre', e.target.value)}
-                                                required
+                                                readOnly
+                                                placeholder="Busque por DNI..."
                                             />
-                                            {errores.nombre && <div className={styles.errorTooltip}>{errores.nombre}</div>}
                                         </div>
                                         <div className={styles.fieldWrapper}>
                                             <label>Apellido (*)</label>
                                             <input
-                                                className={`${styles.input} ${errores.apellido ? styles.inputError : ''}`}
+                                                className={`${styles.input} ${styles.readOnly}`}
                                                 value={titular.apellido}
-                                                onChange={e => handleTitularChange('apellido', e.target.value)}
-                                                required
+                                                readOnly
+                                                placeholder="Busque por DNI..."
                                             />
-                                            {errores.apellido && <div className={styles.errorTooltip}>{errores.apellido}</div>}
                                         </div>
                                         <div className={styles.fieldWrapper}>
                                             <label>Teléfono (*)</label>
                                             <input
-                                                className={`${styles.input} ${errores.telefono ? styles.inputError : ''}`}
+                                                className={`${styles.input} ${styles.readOnly}`}
                                                 value={titular.telefono}
-                                                onChange={e => handleTitularChange('telefono', e.target.value)}
-                                                required
+                                                readOnly
                                             />
-                                            {errores.telefono && <div className={styles.errorTooltip}>{errores.telefono}</div>}
                                         </div>
                                     </div>
+                                    <p style={{fontSize:'0.8rem', color:'#888', marginTop:'5px'}}>* Busque por DNI para completar estos datos.</p>
                                 </div>
 
-                                {/* SECCIÓN OCUPANTES */}
+                                {/* SECCIÓN OCUPANTES (Sin cambios) */}
                                 <div className={styles.ocupantesContainer}>
                                     <h4 style={{color:'#666', borderBottom:'1px solid #ddd', paddingBottom:'5px', marginBottom:'15px'}}>Ocupantes por Habitación</h4>
 
