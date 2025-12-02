@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation'; // <--- 1. IMPORTAR ROUTER
+import { useRouter } from 'next/navigation';
 import ProtectedRoute from '../components/layout/ProtectedRoute';
 import ErrorModal from '../components/ui/modals/ErrorModal';
 import SuccessModal from '../components/ui/modals/SuccessModal';
@@ -33,7 +33,7 @@ const getTodayString = () => {
 };
 
 export default function ReservasPage() {
-    const router = useRouter(); // <--- 2. INICIALIZAR ROUTER
+    const router = useRouter();
     const todayString = getTodayString();
 
     const [step, setStep] = useState(1);
@@ -63,11 +63,9 @@ export default function ReservasPage() {
     const [ocupantesPorHab, setOcupantesPorHab] = useState({});
     const [errores, setErrores] = useState({});
 
-    // ---------- NUEVO: errores para ocupantes ----------
-    // estructura: { [habId]: { [index]: { nombre: 'msg', apellido: 'msg', dni: 'msg' } } }
     const [erroresOcupantes, setErroresOcupantes] = useState({});
 
-    // --- VALIDACIONES (Sin cambios importantes) ---
+    // --- VALIDACIONES ---
     const validarInput = (campo, valor) => {
         let msg = "";
         if (campo === 'numDoc' && valor && !/^[0-9]{7,8}$/.test(valor)) {
@@ -87,7 +85,6 @@ export default function ReservasPage() {
         validarInput(campo, valor);
     };
 
-    // ---------- NUEVO: validar campos de ocupante ----------
     const validarOcupante = (habId, index, campo, valor) => {
         let msg = "";
 
@@ -96,7 +93,7 @@ export default function ReservasPage() {
         }
 
         if (campo === "dni" && valor && !/^[0-9]{7,8}$/.test(valor)) {
-            msg = "DNI inválido.";
+            msg = "El DNI invalido.";
         }
 
         setErroresOcupantes(prev => ({
@@ -111,7 +108,7 @@ export default function ReservasPage() {
         }));
     };
 
-    // --- 3. LÓGICA DE BÚSQUEDA MODIFICADA ---
+    // --- BÚSQUEDA ---
     const buscarTitular = async () => {
         if (!titular.numDoc || titular.numDoc.length < 6) {
             setErrores(prev => ({...prev, numDoc: "Ingrese un DNI válido para buscar."}));
@@ -122,7 +119,6 @@ export default function ReservasPage() {
             const res = await fetch(`${API_URL}/huespedes/buscar-por-dni?dni=${titular.numDoc}`);
 
             if (res.ok) {
-                // --- CASO 1: ENCONTRADO ---
                 const data = await res.json();
                 setTitular(prev => ({
                     ...prev,
@@ -134,12 +130,7 @@ export default function ReservasPage() {
                 setErrores(prev => ({ ...prev, nombre: '', apellido: '', telefono: '', numDoc: '' }));
 
             } else if (res.status === 404) {
-                // --- CASO 2: NO ENCONTRADO (Bloqueo y Redirección) ---
-
-                // Limpiamos los campos para que no pueda confirmar con datos vacíos o parciales
                 setTitular(prev => ({ ...prev, nombre: '', apellido: '', telefono: '' }));
-
-                // Abrimos el modal de acción forzando la decisión
                 setActionModal({
                     isOpen: true,
                     titulo: "Huésped no registrado",
@@ -147,12 +138,10 @@ export default function ReservasPage() {
                     confirmText: "Ir a Alta Huésped",
                     cancelText: "Cancelar / Reintentar",
                     onConfirm: () => {
-                        // Redirige a la página de alta
                         router.push('/darDeAlta');
                         closeAction();
                     },
                     onCancel: () => {
-                        // Simplemente cierra el modal y permite corregir el DNI
                         closeAction();
                     }
                 });
@@ -167,25 +156,26 @@ export default function ReservasPage() {
         }
     };
 
-    // --- HANDLERS OCUPANTES (Actualizados) ---
+    // --- HANDLERS OCUPANTES ---
     const agregarOcupante = (habId, capacidadMax) => {
-        setOcupantesPorHab(prev => {
-            const lista = prev[habId] || [];
-            if (lista.length >= capacidadMax) return prev;
+        const listaActual = ocupantesPorHab[habId] || [];
+        if (listaActual.length >= capacidadMax) return;
 
-            const nuevaLista = [...lista, { nombre: '', apellido: '', dni: '' }];
+        const nuevaLista = [...listaActual, { nombre: '', apellido: '', dni: '' }];
+        const nuevoIndex = nuevaLista.length - 1;
 
-            // Inicializar errores para el nuevo ocupante (vacío)
-            setErroresOcupantes(prevErr => ({
-                ...prevErr,
-                [habId]: {
-                    ...(prevErr[habId] || {}),
-                    [nuevaLista.length - 1]: { nombre: '', apellido: '', dni: '' }
-                }
-            }));
+        setOcupantesPorHab(prev => ({
+            ...prev,
+            [habId]: nuevaLista
+        }));
 
-            return { ...prev, [habId]: nuevaLista };
-        });
+        setErroresOcupantes(prevErr => ({
+            ...prevErr,
+            [habId]: {
+                ...(prevErr[habId] || {}),
+                [nuevoIndex]: { nombre: '', apellido: '', dni: '' }
+            }
+        }));
     };
 
     const quitarOcupante = (habId, index) => {
@@ -195,13 +185,11 @@ export default function ReservasPage() {
             return { ...prev, [habId]: lista };
         });
 
-        // Quitar errores del ocupante eliminado y reindexar errores de esa habitación
         setErroresOcupantes(prevErr => {
             const copy = { ...(prevErr || {}) };
             const habErr = copy[habId] ? { ...copy[habId] } : {};
-            // borrar el índice
             delete habErr[index];
-            // reindexar las keys numéricas
+
             const reindexed = {};
             const indices = Object.keys(habErr)
                 .map(k => Number(k))
@@ -216,7 +204,6 @@ export default function ReservasPage() {
     };
 
     const handleOcupanteChange = (habId, index, campo, valor) => {
-        // validar en tiempo real
         validarOcupante(habId, index, campo, valor);
 
         setOcupantesPorHab(prev => {
@@ -226,7 +213,7 @@ export default function ReservasPage() {
         });
     };
 
-    // --- LOGICA PRINCIPAL (Sin cambios mayores) ---
+    // --- LOGICA PRINCIPAL ---
     const handleBuscar = async () => {
         if (!fechaDesde || !fechaHasta) return showError('Faltan datos', 'Seleccione fechas.');
         if (fechaDesde < todayString) return showError('Error', 'No se puede reservar en el pasado.');
@@ -284,21 +271,18 @@ export default function ReservasPage() {
     const onFormSubmit = (e) => {
         e.preventDefault();
 
-        // VALIDACIÓN EXTRA: Si no tiene nombre/apellido porque falló la búsqueda, no deja avanzar
         if (!titular.nombre || !titular.apellido) {
             return showError("Error", "Debe buscar y seleccionar un titular válido.");
         }
 
         if (Object.values(errores).some(m => m)) return showError("Error", "Corrija los campos en rojo.");
 
-        // ---------- NUEVO: Validar ocupantes antes de confirmar ----------
         for (const habId in ocupantesPorHab) {
             const lista = ocupantesPorHab[habId] || [];
 
             for (let i = 0; i < lista.length; i++) {
                 const o = lista[i];
 
-                // No permitir campos vacíos
                 if (!o.nombre || !o.apellido || !o.dni) {
                     return showError("Error", "Complete todos los datos de los ocupantes.");
                 }
@@ -318,11 +302,6 @@ export default function ReservasPage() {
     };
 
     const handleConfirmarReal = async () => {
-        // En el Action Modal original, si venía de "No encontrado", onConfirm hace redirect.
-        // Si viene de "Confirmar Reserva", hace esto.
-        // Como compartimos el estado 'actionModal', debemos asegurarnos de qué estamos confirmando.
-        // Pero como pasamos la función onConfirm directamente al setActionModal en buscarTitular, no hay conflicto.
-
         closeAction();
         try {
             const grupos = {};
@@ -346,7 +325,6 @@ export default function ReservasPage() {
 
                 for (const tramo of tramos) {
                     const [ingreso, ultimo] = tramo;
-                    // Corrección fecha egreso (+1 día)
                     const d = new Date(ultimo + "T12:00:00");
                     d.setDate(d.getDate() + 1);
                     const egreso = d.toISOString().split('T')[0];
@@ -395,7 +373,7 @@ export default function ReservasPage() {
         isOpen: true,
         titulo: t,
         descripcion: d,
-        onConfirm: handleConfirmarReal, // Acción por defecto (Confirmar Reserva)
+        onConfirm: handleConfirmarReal,
         confirmText: "Aceptar",
         cancelText: "Cancelar"
     });
@@ -409,7 +387,6 @@ export default function ReservasPage() {
             {errorModal.isOpen && <ErrorModal titulo={errorModal.titulo} descripcion={errorModal.descripcion} onClose={closeError} />}
             {successModal.isOpen && <SuccessModal titulo={successModal.titulo} descripcion={successModal.descripcion} onClose={closeSuccess} />}
 
-            {/* Modal de Acción Dinámico (sirve para Confirmar Reserva O Redirigir a Alta) */}
             {actionModal.isOpen && (
                 <ActionModal
                     titulo={actionModal.titulo}
@@ -425,7 +402,6 @@ export default function ReservasPage() {
                 <h1 className={styles.title}>DISPONIBILIDAD DE HABITACIONES</h1>
                 <div className={styles.formContainer}>
 
-                    {/* PASO 1 y 2 (Sin cambios visuales) */}
                     {step === 1 && (
                         <div className={styles.gridTop}>
                             <div className={styles.fieldWrapper}>
@@ -480,7 +456,6 @@ export default function ReservasPage() {
                         </>
                     )}
 
-                    {/* --- PASO 3: FORMULARIO --- */}
                     {step === 3 && (
                         <div className="animate-fadeIn">
                             <h3 style={{ textAlign: 'center', marginBottom:'20px', color: '#444' }}>Datos del Cliente ({accionTipo})</h3>
@@ -495,7 +470,6 @@ export default function ReservasPage() {
                             </div>
 
                             <form onSubmit={onFormSubmit}>
-                                {/* SECCIÓN TITULAR (Diseño Limpio) */}
                                 <div style={{marginTop:'20px'}}>
                                     <h4 style={{color:'#666', borderBottom:'1px solid #ddd', paddingBottom:'5px', marginBottom:'15px'}}>Titular de la Reserva</h4>
 
@@ -507,7 +481,6 @@ export default function ReservasPage() {
                                             </select>
                                         </div>
 
-                                        {/* BUSCADOR DNI */}
                                         <div className={styles.fieldWrapper}>
                                             <label>Nro Doc (*)</label>
                                             <div style={{display:'flex', gap:'8px'}}>
@@ -532,7 +505,6 @@ export default function ReservasPage() {
                                         </div>
                                     </div>
 
-                                    {/* CAMPOS DE SOLO LECTURA (Deshabilitados para obligar a usar el buscador) */}
                                     <div className={styles.gridBottom}>
                                         <div className={styles.fieldWrapper}>
                                             <label>Nombre (*)</label>
@@ -564,39 +536,29 @@ export default function ReservasPage() {
                                     <p style={{fontSize:'0.8rem', color:'#888', marginTop:'5px'}}>* Busque por DNI para completar estos datos.</p>
                                 </div>
 
-                                {/* SECCIÓN OCUPANTES (Con validaciones en tiempo real) */}
                                 <div className={styles.ocupantesContainer}>
                                     <h4 style={{color:'#666', borderBottom:'1px solid #ddd', paddingBottom:'5px', marginBottom:'15px'}}>Ocupantes por Habitación</h4>
 
                                     {habsSeleccionadasUnicas.map(hab => {
                                         const hId = getHabId(hab);
                                         const ocupantes = ocupantesPorHab[hId] || [];
-
-                                        // --- CORRECCIÓN ACÁ ---
-                                        // Usamos hab.capacidad directamente.
-                                        // El "|| 1" es el truco: si la API devuelve 0, undefined o null,
-                                        // forzamos que la capacidad sea 1 para que aparezca el botón.
                                         const cap = hab.capacidad || 1;
-
-                                        // Calculamos si ya llegamos al límite
                                         const lleno = ocupantes.length >= cap;
 
                                         return (
                                             <div key={hId} className={styles.habitacionBlock}>
                                                 <div className={styles.habitacionTitle}>
                                                     <span>Habitación {hab.numero} ({hab.tipo})</span>
-                                                    {/* Esto mostrará (0/1) al principio y (1/1) al agregar */}
                                                     <span style={{fontSize:'0.85rem', color: lleno ? '#d32f2f' : '#388e3c'}}>
-                    ({ocupantes.length}/{cap})
-                </span>
+                                                        ({ocupantes.length}/{cap})
+                                                    </span>
                                                 </div>
 
-                                                {/* Mapeo de los inputs (se verán como tu foto 2 cuando agregues uno) */}
                                                 {ocupantes.map((ocup, idx) => (
                                                     <div key={idx} className={styles.ocupanteRow}>
-                                                        <span style={{color:'#999', fontSize:'0.8rem', width:'20px'}}>#{idx+1}</span>
+                                                        <span className={styles.ocupanteIndex}>#{idx+1}</span>
 
-                                                        <div style={{flex:'1 1 auto'}}>
+                                                        <div style={{flex:'1 1 auto', position: 'relative'}}>
                                                             <input
                                                                 className={`${styles.inputSmall} ${erroresOcupantes[hId]?.[idx]?.nombre ? styles.inputError : ''}`}
                                                                 placeholder="Nombre"
@@ -608,30 +570,34 @@ export default function ReservasPage() {
                                                             )}
                                                         </div>
 
-                                                        <div style={{flex:'1 1 auto'}}>
+                                                        <div style={{flex:'1 1 auto', position: 'relative'}}>
                                                             <input
-                                                                className={styles.inputSmall}
+                                                                className={`${styles.inputSmall} ${erroresOcupantes[hId]?.[idx]?.apellido ? styles.inputError : ''}`}
                                                                 placeholder="Apellido"
                                                                 value={ocup.apellido}
                                                                 onChange={e => handleOcupanteChange(hId, idx, 'apellido', e.target.value)}
                                                             />
+                                                            {erroresOcupantes[hId]?.[idx]?.apellido && (
+                                                                <span className={styles.errorTooltip}>{erroresOcupantes[hId][idx].apellido}</span>
+                                                            )}
                                                         </div>
 
-                                                        <div style={{flex:'0 0 160px'}}>
+                                                        <div style={{flex:'0 0 160px', position: 'relative'}}>
                                                             <input
-                                                                className={styles.inputSmall}
+                                                                className={`${styles.inputSmall} ${erroresOcupantes[hId]?.[idx]?.dni ? styles.inputError : ''}`}
                                                                 placeholder="DNI"
                                                                 value={ocup.dni}
                                                                 onChange={e => handleOcupanteChange(hId, idx, 'dni', e.target.value)}
                                                             />
+                                                            {erroresOcupantes[hId]?.[idx]?.dni && (
+                                                                <span className={styles.errorTooltip}>{erroresOcupantes[hId][idx].dni}</span>
+                                                            )}
                                                         </div>
 
                                                         <button type="button" className={styles.btnRemove} onClick={() => quitarOcupante(hId, idx)}>✕</button>
                                                     </div>
                                                 ))}
 
-                                                {/* El botón SOLO aparece si NO está lleno.
-                Si cap es 1 y agregas 1, esto desaparece (correcto). */}
                                                 {!lleno && (
                                                     <button
                                                         type="button"
