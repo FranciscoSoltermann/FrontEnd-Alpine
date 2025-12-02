@@ -22,7 +22,7 @@ const initialState = {
   posicionIVA: 'Consumidor_Final',
   pais: '',
   provincia: '',
-  localidad: '', 
+  localidad: '',
   codigoPostal: '',
   calle: '',
   numero: '',
@@ -49,22 +49,175 @@ export default function Formulario() {
   const [modalData, setModalData] = useState(null);
   const [modalError, setModalError] = useState(null);
   const [infoModalData, setInfoModalData] = useState(null);
-  
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-    // Limpiar error del campo cuando el usuario empiece a escribir
-    if (errores[name]) {
-      setErrores(prev => {
-        const newErrores = { ...prev };
-        delete newErrores[name];
+
+    const validarFormularioCompleto = (data) => {
+        const newErrores = {};
+
+        // 1. Validaciones Específicas de Longitud
+        // TELÉFONO: Máximo 15 dígitos
+        if (data.telefono) {
+            if (!/^[0-9]+$/.test(data.telefono)) {
+                newErrores.telefono = "Solo se permiten números.";
+            } else if (data.telefono.length > 15) {
+                newErrores.telefono = "Máximo 15 dígitos.";
+            }
+        }
+
+        // DOCUMENTO: Entre 7 y 8 dígitos
+        if (data.numeroDocumento) {
+            if (!/^[0-9]+$/.test(data.numeroDocumento)) {
+                newErrores.numeroDocumento = "Solo se permiten números.";
+            } else if (data.numeroDocumento.length < 7 || data.numeroDocumento.length > 8) {
+                newErrores.numeroDocumento = "Debe tener 7 u 8 dígitos.";
+            }
+        }
+
+        // 2. OTROS NÚMEROS (Numero calle, CP, Piso)
+        const otrosNumericos = ['numero', 'codigoPostal', 'piso'];
+        otrosNumericos.forEach(field => {
+            if (data[field] && !/^[0-9]+$/.test(data[field])) {
+                newErrores[field] = "Solo se permiten números.";
+            }
+        });
+
+        // 3. GRUPO TEXTO
+        const camposTexto = ['nombre', 'apellidos', 'nacionalidad', 'ocupacion', 'pais', 'provincia', 'localidad'];
+        camposTexto.forEach(field => {
+            if (data[field] && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(data[field])) {
+                newErrores[field] = "Solo se permiten letras.";
+            }
+        });
+
+        // 4. CUIT
+        if (data.cuit) {
+            if (!/^[0-9]+$/.test(data.cuit)) {
+                newErrores.cuit = "El CUIT solo debe contener números.";
+            } else if (data.cuit.length > 11) {
+                newErrores.cuit = "El CUIT no puede tener más de 11 dígitos.";
+            }
+        }
+
+        // 5. CALLE Y DEPARTAMENTO
+        if (data.calle && !/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.]+$/.test(data.calle)) {
+            newErrores.calle = "Caracteres no válidos para una calle.";
+        }
+        if (data.departamento && !/^[a-zA-Z0-9]+$/.test(data.departamento)) {
+            newErrores.departamento = "Solo letras o números (sin símbolos).";
+        }
+
+        // 6. FECHA DE NACIMIENTO
+        if (data.fechaNacimiento) {
+            const minYear = 1900;
+            // Dividimos la fecha para obtener año, mes y día como números
+            const [year, month, day] = data.fechaNacimiento.split('-').map(Number);
+            const fechaActual = new Date();
+
+            // Validación año mínimo y futuro
+            if (year < minYear) {
+                newErrores.fechaNacimiento = "El año no puede ser anterior a 1900.";
+            } else if (year > fechaActual.getFullYear()) {
+                newErrores.fechaNacimiento = "El año no puede ser mayor al actual.";
+            } else {
+                // Validación MAYOR DE 18 AÑOS
+                let edad = fechaActual.getFullYear() - year;
+
+                // Ajuste: Si aún no cumplió años este año (comparando mes y día), restamos 1 a la edad
+                if (fechaActual.getMonth() + 1 < month || (fechaActual.getMonth() + 1 === month && fechaActual.getDate() < day)) {
+                    edad--;
+                }
+
+                if (edad < 18) {
+                    newErrores.fechaNacimiento = "Debe ser mayor de 18 años.";
+                }
+            }
+        }
+
         return newErrores;
-      });
-    }
-  };
+    };
+
+    // --- MANEJO DE CAMBIOS EN TIEMPO REAL ---
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+
+        setFormData((prevData) => ({
+            ...prevData,
+            [name]: value,
+        }));
+
+        let errorMsg = "";
+
+        // VALIDACIÓN TELÉFONO (Tiempo real)
+        if (name === 'telefono' && value) {
+            if (!/^[0-9]+$/.test(value)) {
+                errorMsg = "Solo se permiten números.";
+            } else if (value.length > 15) {
+                errorMsg = "Máximo 15 dígitos.";
+            }
+        }
+
+        // VALIDACIÓN DOCUMENTO (Tiempo real)
+        else if (name === 'numeroDocumento' && value) {
+            if (!/^[0-9]+$/.test(value)) {
+                errorMsg = "Solo se permiten números.";
+            } else if (value.length > 8) {
+                // Avisamos si se pasa, pero no validamos que sea <7 aquí para no molestar mientras escribe
+                errorMsg = "Máximo 8 dígitos.";
+            }
+        }
+        else if (['numero'].includes(name) && value && !/^[0-9]+$/.test(value)) {
+            errorMsg = "Solo se permiten números.";
+        }
+        // OTROS CAMPOS NUMÉRICOS
+        else if (['codigoPostal', 'piso'].includes(name) && value && !/^[a-zA-Z0-9\s]+/.test(value)) {
+            errorMsg = "Solo se permiten números.";
+        }
+        // CAMPOS DE TEXTO
+        else if (['nombre', 'apellidos', 'nacionalidad', 'ocupacion', 'pais', 'provincia', 'localidad'].includes(name) && value && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value)) {
+            errorMsg = "Solo se permiten letras.";
+        }
+        // CUIT
+        else if (name === 'cuit' && value) {
+            if (!/^[0-9]+$/.test(value)) errorMsg = "Solo números.";
+            else if (value.length > 11) errorMsg = "Máximo 11 dígitos.";
+        }
+        // CALLE
+        else if (name === 'calle' && value && !/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.]+$/.test(value)) {
+            errorMsg = "Caracteres no válidos.";
+        }
+        // DEPARTAMENTO
+        else if (name === 'departamento' && value && !/^[a-zA-Z0-9]+$/.test(value)) {
+            errorMsg = "Solo letras y números.";
+        }
+        // FECHA
+        else if (name === 'fechaNacimiento' && value) {
+            const [year, month, day] = value.split('-').map(Number);
+            const fechaActual = new Date();
+
+            if (year > fechaActual.getFullYear()) {
+                errorMsg = "Año mayor al actual.";
+            } else if (year < 1900 && value.length >= 4) {
+                errorMsg = "Año inválido.";
+            } else if (value.length === 10) { // Solo validamos edad completa si la fecha está completa (YYYY-MM-DD son 10 chars)
+                let edad = fechaActual.getFullYear() - year;
+
+                // Ajuste preciso de edad (mes y día)
+                if (fechaActual.getMonth() + 1 < month || (fechaActual.getMonth() + 1 === month && fechaActual.getDate() < day)) {
+                    edad--;
+                }
+
+                if (edad < 18) {
+                    errorMsg = "Debe ser mayor de 18 años.";
+                }
+            }
+        }
+
+        setErrores(prev => {
+            const newErrores = { ...prev };
+            if (errorMsg) newErrores[name] = errorMsg;
+            else delete newErrores[name];
+            return newErrores;
+        });
+    };
 
   const handleSubmit = async (e) => {
   e.preventDefault();
@@ -139,13 +292,13 @@ export default function Formulario() {
         onConfirm: () => setModalData(null)
       });
 
-      return; 
+      return;
     }
 
     // 🔹 Si la respuesta es OK (200–299)
     const data = await respuesta.json();
       console.log('Huésped guardado correctamente:', data);
-      
+
       setSuccessModal({
         titulo: "Alta Exitosa",
         descripcion: `Huésped "${data.nombre} ${data.apellido}" dado de alta correctamente.`,
@@ -153,7 +306,7 @@ export default function Formulario() {
           // Acción a tomar DESPUÉS de cerrar el modal de éxito
           setSuccessModal(null);
           setFormData(initialState);
-          router.push('/dashboard'); 
+          router.push('/dashboard');
         }
       });
 
@@ -186,8 +339,8 @@ export default function Formulario() {
       onCancel: () => setInfoModalData(null),
       onConfirm: () => {
         setInfoModalData(null);
-        setFormData(initialState); 
-        router.push('/buscar'); 
+        setFormData(initialState);
+        router.push('/buscar');
       }
     });
   };
@@ -517,7 +670,7 @@ export default function Formulario() {
         {/* --- Contenedor para Errores Globales --- */}
         { (errores.error || errores.global) && (
           <div className={styles.globalErrorContainer}>
-    
+
            {/* Error de lógica (ej. CuitExistente) */}
             {errores.error && (
               <p className={styles.errorGlobal}>{errores.error}</p>
@@ -527,7 +680,7 @@ export default function Formulario() {
           {errores.global && (
             <p className={styles.errorGlobal}>{errores.global}</p>
           )}
-    
+
           </div>
         )}
         {/* --- Fin de Errores Globales --- */}
