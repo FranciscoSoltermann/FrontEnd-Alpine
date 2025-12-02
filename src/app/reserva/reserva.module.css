@@ -424,3 +424,8 @@
     opacity: 0.6;
     cursor: not-allowed;
 }
+.errorTooltipBottom {
+    color: #d32f2f;
+    font-size: 0.75rem;
+    margin-top: 3px;
+}
