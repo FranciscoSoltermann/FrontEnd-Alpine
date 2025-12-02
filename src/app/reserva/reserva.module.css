@@ -4,7 +4,7 @@
 
 .container {
     background-color: #ffffff;
-    max-width: 1000px; /* Ancho máximo del contenedor */
+    max-width: 1000px;
     margin: 2rem auto;
     padding: 2.5rem;
     border-radius: 8px;
@@ -29,12 +29,12 @@
 
 .gridTop {
     display: grid;
-    grid-template-columns: 1fr 1fr 150px; /* Dos inputs y el botón */
+    grid-template-columns: 1fr 1fr 150px;
     gap: 1.5rem;
-    align-items: end; /* Alinear abajo para que coincida con el input */
+    align-items: end;
     margin-bottom: 2rem;
     padding-bottom: 2rem;
-    border-bottom: 1px solid #eee; /* Separador sutil */
+    border-bottom: 1px solid #eee;
 }
 
 .fieldWrapper {
@@ -56,11 +56,11 @@
     border-radius: 5px;
     font-size: 0.9rem;
     background-color: #fdfdfd;
-    box-sizing: border-box; /* Para que el padding no afecte el ancho */
+    box-sizing: border-box;
 }
 
 .btnBuscar {
-    background-color: #4dd0e1; /* Celeste */
+    background-color: #4dd0e1;
     color: white;
     border: none;
     padding: 0.75rem;
@@ -68,30 +68,23 @@
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.9rem;
-    height: 42px; /* Misma altura que los inputs estándar */
+    height: 42px;
     width: 100%;
     transition: opacity 0.2s;
 }
 
-.btnBuscar:hover {
-    opacity: 0.9;
-}
+.btnBuscar:hover { opacity: 0.9; }
+.btnBuscar:disabled { background-color: #b2ebf2; cursor: not-allowed; }
 
-.btnBuscar:disabled {
-    background-color: #b2ebf2;
-    cursor: not-allowed;
-}
-
-/* --- 3. BOTONES DE ACCIÓN (VOLVER / RESERVAR) --- */
+/* --- 3. BOTONES DE ACCIÓN --- */
 
 .topActions {
     display: flex;
-    justify-content: flex-end; /* A la derecha */
+    justify-content: flex-end;
     gap: 15px;
     margin-bottom: 20px;
 }
 
-/* Botón Volver (Naranja) */
 .btnVolverOrange {
     background-color: #ff9800;
     color: white;
@@ -104,14 +97,10 @@
     text-transform: uppercase;
     transition: background-color 0.2s;
 }
+.btnVolverOrange:hover { background-color: #f57c00; }
 
-.btnVolverOrange:hover {
-    background-color: #f57c00;
-}
-
-/* Botón Reservar (Verde) */
 .btnReservarGreen {
-    background-color: #8bc34a; /* Verde claro */
+    background-color: #8bc34a;
     color: white;
     border: none;
     padding: 10px 25px;
@@ -122,18 +111,30 @@
     text-transform: uppercase;
     transition: background-color 0.2s;
 }
+.btnReservarGreen:hover { background-color: #7cb342; }
 
-.btnReservarGreen:hover {
-    background-color: #7cb342;
+/* NUEVO: Botón Ocupar (Azul) */
+.btnOcuparBlue {
+    background-color: #2196f3;
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    text-transform: uppercase;
+    transition: background-color 0.2s;
 }
+.btnOcuparBlue:hover { background-color: #1976d2; }
 
 /* --- 4. MATRIZ DE ESTADO (TABLA) --- */
 
 .tableWrapper {
     width: 100%;
-    overflow-x: auto; /* Scroll horizontal necesario */
+    overflow-x: auto;
     overflow-y: auto;
-    max-height: 500px; /* Altura máxima para scroll vertical */
+    max-height: 500px;
     border: 1px solid #ddd;
     background: #fff;
     margin-bottom: 20px;
@@ -142,7 +143,7 @@
 
 .matrixTable {
     width: 100%;
-    border-collapse: separate; /* Necesario para sticky headers */
+    border-collapse: separate;
     border-spacing: 0;
     font-size: 0.9rem;
 }
@@ -151,10 +152,9 @@
     border: 1px solid #e0e0e0;
     padding: 10px;
     text-align: center;
-    min-width: 100px; /* Ancho mínimo para columnas */
+    min-width: 100px;
 }
 
-/* Cabecera de Habitaciones (Sticky Top) */
 .matrixTable th {
     background-color: #eeeeee;
     color: #333;
@@ -165,18 +165,16 @@
     border-bottom: 2px solid #ccc;
 }
 
-/* Columna de Fechas (Sticky Left) */
 .stickyCol {
     position: sticky;
     left: 0;
-    background-color: #e0e0e0; /* Un poco más oscuro para diferenciar */
+    background-color: #e0e0e0;
     z-index: 20;
     font-weight: bold;
     color: #444;
     border-right: 2px solid #ccc;
 }
 
-/* Asegurar que la esquina superior izquierda (cruce sticky) quede encima */
 .matrixTable thead tr th.stickyCol {
     z-index: 30;
     background-color: #d6d6d6;
@@ -188,66 +186,36 @@
     padding: 6px;
 }
 
-/* --- 5. CHECKBOX VISUAL (CUADRADOS) --- */
+/* --- 5. CHECKBOX VISUAL --- */
 
 .checkboxSquare {
     width: 32px;
     height: 32px;
-    margin: 0 auto; /* Centrado */
+    margin: 0 auto;
     border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white; /* Color del tick ✓ */
+    color: white;
     border: 1px solid rgba(0,0,0,0.1);
     transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
-/* Tamaño del ícono SVG dentro del cuadrado */
 .checkboxSquare svg {
     width: 22px;
     height: 22px;
 }
 
-/* ESTADOS Y COLORES */
+/* Colores Estados */
+.DISPONIBLE { background-color: #8bc34a; cursor: pointer; }
+.DISPONIBLE:hover { opacity: 0.85; }
+.DISPONIBLE.selected { box-shadow: 0 0 0 3px #2196f3; transform: scale(1.1); z-index: 5; position: relative; }
 
-.DISPONIBLE {
-    background-color: #8bc34a; /* Verde */
-    cursor: pointer;
-}
+.OCUPADA { background-color: #ef5350; cursor: not-allowed; opacity: 0.9; }
+.RESERVADA { background-color: #ff9800; cursor: not-allowed; opacity: 0.9; }
+.MANTENIMIENTO { background-color: #e0e0e0; border: 1px solid #bdbdbd; color: #757575; cursor: not-allowed; }
 
-.DISPONIBLE:hover {
-    opacity: 0.85;
-}
-
-/* Estado seleccionado (Borde azul) */
-.DISPONIBLE.selected {
-    box-shadow: 0 0 0 3px #2196f3; /* Anillo azul exterior */
-    transform: scale(1.1);
-    z-index: 5;
-    position: relative;
-}
-
-.OCUPADA {
-    background-color: #ef5350; /* Rojo */
-    cursor: not-allowed;
-    opacity: 0.9;
-}
-
-.RESERVADA {
-    background-color: #ff9800; /* Naranja */
-    cursor: not-allowed;
-    opacity: 0.9;
-}
-
-.MANTENIMIENTO {
-    background-color: #e0e0e0; /* Gris claro de fondo */
-    border: 1px solid #bdbdbd; /* Borde gris un poco más oscuro */
-    color: #757575;            /* Color gris oscuro para el icono (la X) */
-    cursor: not-allowed;       /* Cursor de prohibido */
-}
-
-/* --- 6. LEYENDA INFERIOR --- */
+/* --- 6. LEYENDAS Y CONTENEDORES INFERIORES --- */
 
 .legendContainer {
     display: flex;
@@ -269,11 +237,9 @@
     color: #555;
 }
 
-/* --- 7. FORMULARIO DE PASAJERO (PASO 3) --- */
-
 .selectionInfo {
     text-align: center;
-    background-color: #e3f2fd; /* Azul muy claro */
+    background-color: #e3f2fd;
     color: #0d47a1;
     padding: 1rem;
     border-radius: 6px;
@@ -281,21 +247,22 @@
     border: 1px solid #bbdefb;
 }
 
+/* --- 7. FORMULARIO ESTRUCTURA --- */
+
 .gridMiddle {
     display: grid;
-    grid-template-columns: 1fr 1fr; /* Dos columnas iguales */
+    grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
     margin-bottom: 1.5rem;
 }
 
 .gridBottom {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr; /* Tres columnas iguales */
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 1.5rem;
     margin-bottom: 2.5rem;
 }
 
-/* Botones inferiores (reutilizamos estilos, pero contenedores específicos si hace falta) */
 .footerActions {
     display: flex;
     justify-content: flex-end;
@@ -305,60 +272,22 @@
     border-top: 1px solid #eee;
 }
 
-/* --- 8. RESPONSIVE --- */
-
-@media (max-width: 768px) {
-    .gridTop, .gridMiddle, .gridBottom {
-        grid-template-columns: 1fr; /* Todo a una columna en móvil */
-    }
-
-    .btnBuscar, .btnVolverOrange, .btnReservarGreen {
-        width: 100%; /* Botones ancho completo */
-    }
-
-    .topActions, .footerActions {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .legendContainer {
-        flex-wrap: wrap;
-    }
-}
-/* NUEVO: Botón Ocupar (Azul) */
-.btnOcuparBlue {
-    background-color: #2196f3; /* Azul Material Design */
-    color: white;
-    border: none;
-    padding: 10px 25px;
-    font-weight: bold;
-    border-radius: 4px;
-    cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    text-transform: uppercase;
-    transition: background-color 0.2s;
-}
-
-.btnOcuparBlue:hover {
-    background-color: #1976d2; /* Azul más oscuro al pasar mouse */
-}
+/* --- 8. VALIDACIONES VISUALES --- */
 
 .inputError {
     border: 1px solid #dc3545 !important;
     background-color: #fff8f8;
 }
 
-/* Texto de error pequeño debajo del input (opcional) */
 .errorText {
     color: #dc3545;
     font-size: 0.8rem;
     margin-top: 4px;
 }
 
-/* GLOBITO DE ERROR (Estilo Imagen 1) */
 .errorTooltip {
-    background-color: #fce4e4; /* Fondo rosado */
-    color: #cc0000;           /* Texto rojo */
+    background-color: #fce4e4;
+    color: #cc0000;
     border: 1px solid #f5c6cb;
     padding: 8px 10px;
     border-radius: 4px;
@@ -369,32 +298,129 @@
     animation: fadeInTooltip 0.3s ease-in-out;
 }
 
-/* Flechita del globito apuntando arriba */
 .errorTooltip::before {
-    content: "";
-    position: absolute;
-    top: -6px;
-    left: 15px;
-    border-width: 0 6px 6px;
-    border-style: solid;
-    border-color: #f5c6cb transparent;
-    display: block;
-    width: 0;
+    content: ""; position: absolute; top: -6px; left: 15px; border-width: 0 6px 6px; border-style: solid; border-color: #f5c6cb transparent; display: block; width: 0;
 }
-
 .errorTooltip::after {
-    content: "";
-    position: absolute;
-    top: -4px;
-    left: 16px;
-    border-width: 0 5px 5px;
-    border-style: solid;
-    border-color: #fce4e4 transparent;
-    display: block;
-    width: 0;
+    content: ""; position: absolute; top: -4px; left: 16px; border-width: 0 5px 5px; border-style: solid; border-color: #fce4e4 transparent; display: block; width: 0;
 }
 
 @keyframes fadeInTooltip {
     from { opacity: 0; transform: translateY(-5px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- 9. NUEVOS ESTILOS PARA SECCIÓN OCUPANTES --- */
+
+.sectionBox {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+
+.sectionTitle {
+    color: #444;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 10px;
+}
+
+/* Fila de un ocupante individual */
+.ocupanteRow {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+    background-color: #f9f9f9;
+    padding: 10px;
+    border-radius: 6px;
+}
+
+.ocupanteIndex {
+    font-weight: bold;
+    color: #999;
+    width: 25px;
+}
+
+.inputSmall {
+    flex: 1; /* Ocupan espacio igual */
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+/* Botón Agregar Ocupante */
+.btnAdd {
+    background-color: #f1f8e9; /* Verde muy claro */
+    color: #558b2f;
+    border: 1px dashed #558b2f;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 10px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.btnAdd:hover {
+    background-color: #dcedc8;
+}
+
+/* Botón Eliminar (X roja) */
+.btnRemove {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+.btnRemove:hover {
+    background-color: #ef9a9a;
+    color: white;
+}
+
+/* --- 10. RESPONSIVE --- */
+
+@media (max-width: 768px) {
+    .gridTop, .gridMiddle, .gridBottom { grid-template-columns: 1fr; }
+    .btnBuscar, .btnVolverOrange, .btnReservarGreen, .btnOcuparBlue { width: 100%; }
+    .topActions, .footerActions { flex-direction: column; gap: 10px; }
+    .legendContainer { flex-wrap: wrap; }
+
+    /* Responsive Ocupantes */
+    .ocupanteRow { flex-direction: column; align-items: stretch; }
+    .ocupanteIndex { margin-bottom: 5px; }
+    .btnRemove { width: 100%; margin-top: 5px; }
+}
+/* Botón Lupa */
+.btnSearchSmall {
+    background-color: #e3f2fd;
+    border: 1px solid #90caf9;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 45px; /* Cuadrado o levemente rectangular */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: background 0.2s;
+}
+.btnSearchSmall:hover {
+    background-color: #bbdefb;
+}
+.btnSearchSmall:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }

@@ -1,20 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-
-// --- IMPORTS ---
 import ProtectedRoute from '../components/layout/ProtectedRoute';
 import ErrorModal from '../components/ui/modals/ErrorModal';
 import SuccessModal from '../components/ui/modals/SuccessModal';
 import ActionModal from '../components/ui/modals/ActionModal';
 import styles from './reserva.module.css';
 
-// URL de tu API
 const API_URL = "http://localhost:8080/api";
 
-/**
- * Helpers para trabajar con fechas
- */
+// --- HELPERS ---
 const parseDateLocal = (dateStr) => {
     if (!dateStr) return null;
     const parts = dateStr.split('-').map(Number);
@@ -31,29 +26,21 @@ const formatDateLocal = (date) => {
     return `${y}-${m}-${d}`;
 };
 
-// Obtener fecha de hoy string YYYY-MM-DD para los inputs date
 const getTodayString = () => {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 };
 
 export default function ReservasPage() {
     const todayString = getTodayString();
 
-    // --- ESTADOS ---
     const [step, setStep] = useState(1);
     const [accionTipo, setAccionTipo] = useState('RESERVAR');
 
-    // Datos dinámicos
     const [habitaciones, setHabitaciones] = useState([]);
     const [matrixData, setMatrixData] = useState([]);
     const [daysRange, setDaysRange] = useState([]);
     const [loading, setLoading] = useState(false);
-
-    // Selección Múltiple
     const [selectedCells, setSelectedCells] = useState([]);
 
     // Modales
@@ -65,273 +52,233 @@ export default function ReservasPage() {
     const [fechaDesde, setFechaDesde] = useState('');
     const [fechaHasta, setFechaHasta] = useState('');
 
-    // Datos Formulario
-    const [tipoDoc, setTipoDoc] = useState('DNI');
-    const [numDoc, setNumDoc] = useState('');
-    const [nombre, setNombre] = useState('');
-    const [apellido, setApellido] = useState('');
-    const [telefono, setTelefono] = useState('');
+    // Datos Formulario (Titular)
+    const [titular, setTitular] = useState({
+        tipoDoc: 'DNI', numDoc: '', nombre: '', apellido: '', telefono: ''
+    });
 
-    // Estado para errores de formato (Caja Roja)
+    // Estado para búsqueda
+    const [buscandoTitular, setBuscandoTitular] = useState(false);
+
+    // Ocupantes por Habitación
+    const [ocupantesPorHab, setOcupantesPorHab] = useState({});
+
+    // Estado para errores de validación
     const [errores, setErrores] = useState({});
 
-    // ============================
-    // VALIDACIÓN EN TIEMPO REAL (FORMATO)
-    // ============================
+    // --- VALIDACIONES ---
     const validarInput = (campo, valor) => {
         let msg = "";
-
-        if (campo === 'numDoc') {
-            if (valor && !/^[0-9]{7,8}$/.test(valor)) {
-                msg = "El DNI debe contener solo 7 u 8 números, sin letras ni puntos.";
-            }
+        if (campo === 'numDoc' && valor && !/^[0-9]{7,8}$/.test(valor)) {
+            msg = "El DNI debe tener 7 u 8 números.";
         }
-        if (campo === 'nombre' || campo === 'apellido') {
-            if (valor && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(valor)) {
-                msg = "Solo se permiten letras.";
-            }
+        if ((campo === 'nombre' || campo === 'apellido') && valor && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(valor)) {
+            msg = "Solo se permiten letras.";
         }
-        if (campo === 'telefono') {
-            if (valor && !/^[0-9]+$/.test(valor)) {
-                msg = "El teléfono debe contener solo números.";
-            }
+        if (campo === 'telefono' && valor && !/^[0-9]+$/.test(valor)) {
+            msg = "Solo se permiten números.";
         }
-
         setErrores(prev => ({ ...prev, [campo]: msg }));
     };
 
-    const handleChange = (e, setFunction, campo) => {
-        const val = e.target.value;
-        setFunction(val);
-        validarInput(campo, val);
+    const handleTitularChange = (campo, valor) => {
+        setTitular(prev => ({ ...prev, [campo]: valor }));
+        validarInput(campo, valor);
     };
 
-    // ======================
-    //   1. BUSCAR DISPONIBILIDAD
-    // ======================
+    // --- NUEVO: BUSCAR TITULAR ---
+    const buscarTitular = async () => {
+        if (!titular.numDoc || titular.numDoc.length < 6) {
+            setErrores(prev => ({...prev, numDoc: "Ingrese un DNI válido para buscar."}));
+            return;
+        }
+        setBuscandoTitular(true);
+        try {
+            const res = await fetch(`${API_URL}/huespedes/buscar-por-dni?dni=${titular.numDoc}`);
+            if (res.ok) {
+                const data = await res.json();
+                setTitular(prev => ({
+                    ...prev,
+                    nombre: data.nombre || '',
+                    apellido: data.apellido || '',
+                    telefono: data.telefono || '',
+                    tipoDoc: data.tipoDocumento || 'DNI'
+                }));
+                // Limpiar errores visuales
+                setErrores(prev => ({ ...prev, nombre: '', apellido: '', telefono: '', numDoc: '' }));
+            } else if (res.status === 404) {
+                // No encontrado: limpiamos para que escriba uno nuevo
+                setTitular(prev => ({ ...prev, nombre: '', apellido: '', telefono: '' }));
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setBuscandoTitular(false);
+        }
+    };
+
+    // --- HANDLERS OCUPANTES ---
+    const agregarOcupante = (habId, capacidadMax) => {
+        setOcupantesPorHab(prev => {
+            const lista = prev[habId] || [];
+            if (lista.length >= capacidadMax) return prev;
+            return { ...prev, [habId]: [...lista, { nombre: '', apellido: '', dni: '' }] };
+        });
+    };
+
+    const quitarOcupante = (habId, index) => {
+        setOcupantesPorHab(prev => {
+            const lista = [...(prev[habId] || [])];
+            lista.splice(index, 1);
+            return { ...prev, [habId]: lista };
+        });
+    };
+
+    const handleOcupanteChange = (habId, index, campo, valor) => {
+        setOcupantesPorHab(prev => {
+            const lista = [...(prev[habId] || [])];
+            lista[index] = { ...lista[index], [campo]: valor };
+            return { ...prev, [habId]: lista };
+        });
+    };
+
+    // --- LOGICA PRINCIPAL ---
     const handleBuscar = async () => {
-        if (!fechaDesde) return showError('Faltan datos', 'Por favor seleccione la fecha "Desde".');
-        if (!fechaHasta) return showError('Faltan datos', 'Por favor seleccione la fecha "Hasta".');
-
-        // Validaciones de fecha extra (Backend safety)
-        if (fechaDesde < todayString) return showError('Fecha inválida', 'No se puede reservar en el pasado.');
-        if (fechaDesde > fechaHasta) return showError('Fecha inválida', 'La fecha de ingreso no puede ser mayor a la salida.');
-
-        const fDesde = parseDateLocal(fechaDesde);
-        const fHasta = parseDateLocal(fechaHasta);
+        if (!fechaDesde || !fechaHasta) return showError('Faltan datos', 'Seleccione fechas.');
+        if (fechaDesde < todayString) return showError('Error', 'No se puede reservar en el pasado.');
+        if (fechaDesde > fechaHasta) return showError('Error', 'Ingreso mayor a salida.');
 
         setLoading(true);
-
         try {
             const queryParams = new URLSearchParams({ desde: fechaDesde, hasta: fechaHasta });
             const res = await fetch(`${API_URL}/habitaciones/estado?${queryParams}`);
+            if (!res.ok) throw new Error("Error al obtener datos.");
+            const data = await res.json();
 
-            if (!res.ok) {
-                const errorBody = await res.json().catch(() => null);
-                throw new Error(errorBody?.mensaje || "Error al obtener disponibilidad.");
-            }
-
-            const dataBackend = await res.json();
-
-            // Generar rango de días
             const dias = [];
-            const current = new Date(fDesde.getTime());
-            const end = new Date(fHasta.getTime());
-            current.setHours(0,0,0,0);
-            end.setHours(0,0,0,0);
-
-            while (current <= end) {
+            let current = parseDateLocal(fechaDesde);
+            const fin = parseDateLocal(fechaHasta);
+            while (current <= fin) {
                 dias.push(formatDateLocal(current));
                 current.setDate(current.getDate() + 1);
             }
             setDaysRange(dias);
 
-            const dataOrdenada = dataBackend.sort((a, b) =>
-                String(a.numero).localeCompare(String(b.numero), undefined, { numeric: true })
-            );
-
-            setHabitaciones(dataOrdenada);
-            setMatrixData(dataOrdenada);
-
+            const sorted = data.sort((a, b) => String(a.numero).localeCompare(String(b.numero), undefined, { numeric: true }));
+            setHabitaciones(sorted);
+            setMatrixData(sorted);
             setStep(2);
             setSelectedCells([]);
-
+            setOcupantesPorHab({});
         } catch (e) {
-            console.error(e);
-            showError('Error de Servidor', e.message);
+            showError('Error', e.message);
         } finally {
             setLoading(false);
         }
     };
 
-    // ======================
-    //   SELECCIÓN DE CELDAS
-    // ======================
-    const handleCellClick = (habId, fecha, estado, tipoHabitacion, numero) => {
+    const handleCellClick = (habId, fecha, estado, tipo, numero, capacidad) => {
         if (estado !== 'DISPONIBLE') return;
         setSelectedCells(prev => {
-            const exists = prev.find(item => item.habId === habId && item.fecha === fecha);
-            if (exists) return prev.filter(item => item !== exists);
-            return [...prev, { habId, fecha, tipoHabitacion, numero }];
+            const exists = prev.find(i => i.habId === habId && i.fecha === fecha);
+            if (exists) return prev.filter(i => i !== exists);
+            return [...prev, { habId, fecha, tipoHabitacion: tipo, numero, capacidad }];
         });
     };
 
-    // ======================
-    //   NAVEGACIÓN Y SUBMIT
-    // ======================
-    const handleIniciarProceso = (tipoAccion) => {
-        if (selectedCells.length === 0) {
-            return showError('Selección requerida', "Seleccione al menos una celda disponible.");
-        }
-        setAccionTipo(tipoAccion);
+    const handleIniciarProceso = (tipo) => {
+        if (selectedCells.length === 0) return showError('Error', "Seleccione una celda.");
+        setAccionTipo(tipo);
+        const habsUnicas = [...new Set(selectedCells.map(s => s.habId))];
+        const mapInit = { ...ocupantesPorHab };
+        habsUnicas.forEach(id => { if (!mapInit[id]) mapInit[id] = []; });
+        setOcupantesPorHab(mapInit);
         setStep(3);
     };
 
     const onFormSubmit = (e) => {
         e.preventDefault();
-        const hayErroresFormato = Object.values(errores).some(msg => msg !== "");
-        if (hayErroresFormato) {
-            return showError("Datos inválidos", "Por favor corrija los campos marcados en rojo.");
-        }
+        if (Object.values(errores).some(m => m)) return showError("Error", "Corrija los campos en rojo.");
         handlePreConfirmar();
     };
 
     const handlePreConfirmar = () => {
-        const accionTexto = accionTipo === 'OCUPAR' ? 'ocupar' : 'reservar';
-        const tituloTexto = accionTipo === 'OCUPAR' ? 'Confirmar Ocupación' : 'Confirmar Reserva';
-
-        const msg = selectedCells.length === 1
-            ? `¿Desea ${accionTexto} la habitación ${selectedCells[0].numero} para ${selectedCells[0].fecha}?`
-            : `¿Desea confirmar la acción para ${selectedCells.length} días seleccionados?`;
-
-        showConfirmAction(tituloTexto, msg);
+        showConfirmAction(`Confirmar ${accionTipo}`, `¿Desea registrar esta operación?`);
     };
 
     const handleConfirmarReal = async () => {
         closeAction();
-
         try {
-            // 1. Agrupar por habitación
-            const gruposPorHabitacion = {};
-
-            selectedCells.forEach(sel => {
-                if (!gruposPorHabitacion[sel.habId]) {
-                    gruposPorHabitacion[sel.habId] = [];
-                }
-                gruposPorHabitacion[sel.habId].push(sel.fecha);
+            const grupos = {};
+            selectedCells.forEach(s => {
+                if (!grupos[s.habId]) grupos[s.habId] = [];
+                grupos[s.habId].push(s.fecha);
             });
 
-            // 2. Procesar cada habitación
-            for (const habId in gruposPorHabitacion) {
+            for (const habId in grupos) {
+                const fechasOrd = grupos[habId].sort();
+                const tramos = [];
+                let inicio = fechasOrd[0], previo = fechasOrd[0];
 
-                // Ordenar fechas
-                const fechasOrdenadas = gruposPorHabitacion[habId].sort();
-                const gruposConsecutivos = [];
-
-                let inicio = fechasOrdenadas[0];
-                let previo = fechasOrdenadas[0];
-
-                for (let i = 1; i < fechasOrdenadas.length; i++) {
-                    const actual = fechasOrdenadas[i];
-
-                    const dPrev = new Date(previo);
-                    const dActual = new Date(actual);
-
-                    const diff = (dActual - dPrev) / (1000 * 60 * 60 * 24);
-
-                    if (diff === 1) {
-                        // seguimos el tramo
-                        previo = actual;
-                    } else {
-                        // cerrar tramo anterior
-                        gruposConsecutivos.push([inicio, previo]);
-
-                        // iniciar nuevo
-                        inicio = actual;
-                        previo = actual;
-                    }
+                for (let i = 1; i < fechasOrd.length; i++) {
+                    const actual = fechasOrd[i];
+                    const diff = (new Date(actual) - new Date(previo)) / 86400000;
+                    if (diff === 1) previo = actual;
+                    else { tramos.push([inicio, previo]); inicio = actual; previo = actual; }
                 }
+                tramos.push([inicio, previo]);
 
-                // cerrar último tramo
-                gruposConsecutivos.push([inicio, previo]);
+                for (const tramo of tramos) {
+                    const [ingreso, ultimo] = tramo;
+                    // Corrección fecha egreso (+1 día)
+                    const d = new Date(ultimo + "T12:00:00");
+                    d.setDate(d.getDate() + 1);
+                    const egreso = d.toISOString().split('T')[0];
 
-                // 3. Hacer POST por cada tramo
-                for (const tramo of gruposConsecutivos) {
-                    const ingreso = tramo[0];
-                    const ultimoDia = tramo[1];
-
-                    // --- CORRECCIÓN DE FECHA: SUMAMOS 1 DÍA AL ÚLTIMO SELECCIONADO ---
-                    const fechaBase = new Date(ultimoDia + "T12:00:00"); // Truco mediodía
-                    fechaBase.setDate(fechaBase.getDate() + 1);
-
-                    const yyyy = fechaBase.getFullYear();
-                    const mm = String(fechaBase.getMonth() + 1).padStart(2, '0');
-                    const dd = String(fechaBase.getDate()).padStart(2, '0');
-                    const egreso = `${yyyy}-${mm}-${dd}`;
-                    // ----------------------------------------------------------------
-
-                    const reservaRequest = {
-                        ingreso,
-                        egreso, // Enviamos el día siguiente real
-                        huesped: { tipoDocumento: tipoDoc, documento: numDoc, nombre, apellido, telefono },
-                        habitaciones: [habId]
+                    const payload = {
+                        ingreso, egreso,
+                        huesped: {
+                            tipoDocumento: titular.tipoDoc,
+                            documento: titular.numDoc,
+                            nombre: titular.nombre,
+                            apellido: titular.apellido,
+                            telefono: titular.telefono
+                        },
+                        habitaciones: [parseInt(habId)],
+                        ocupantesPorHabitacion: { [habId]: ocupantesPorHab[habId] || [] }
                     };
 
                     const endpoint = accionTipo === 'OCUPAR' ? '/reservas/ocupar' : '/reservas';
-
                     const res = await fetch(`${API_URL}${endpoint}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(reservaRequest)
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
                     });
-
                     if (!res.ok) {
-                        const errorData = await res.json().catch(() => ({}));
-                        throw new Error(errorData.mensaje || "Error al procesar una de las reservas.");
+                        const err = await res.json().catch(() => ({}));
+                        throw new Error(err.mensaje || "Error al procesar.");
                     }
                 }
             }
-
-            showSuccess('¡Éxito!', 'Operación realizada correctamente.');
-
-        } catch (error) {
-            console.error(error);
-            showError('Error', error.message);
+            showSuccess('Éxito', 'Operación completada.');
+        } catch (e) {
+            showError('Error', e.message);
         }
     };
 
-    // --- UTILIDADES ---
-    const showError = (titulo, desc) => setErrorModal({ isOpen: true, titulo, descripcion: desc });
+    const showError = (t, d) => setErrorModal({ isOpen: true, titulo: t, descripcion: d });
     const closeError = () => setErrorModal({ ...errorModal, isOpen: false });
-    const showSuccess = (titulo, desc) => setSuccessModal({ isOpen: true, titulo, descripcion: desc });
-    const showConfirmAction = (titulo, desc) => setActionModal({ isOpen: true, titulo, descripcion: desc });
-    const closeAction = () => setActionModal({ ...actionModal, isOpen: false });
-
-    // ⭐ CIERRE DE ÉXITO CON AUTO-RECARGA
+    const showSuccess = (t, d) => setSuccessModal({ isOpen: true, titulo: t, descripcion: d });
     const closeSuccess = () => {
         setSuccessModal({ ...successModal, isOpen: false });
-
-        // No reseteamos a step 1, nos quedamos en la grilla (Step 2)
-        setStep(2);
-        setSelectedCells([]);
-        setNombre(''); setApellido(''); setTelefono(''); setNumDoc('');
-        setErrores({});
-        setAccionTipo('RESERVAR');
-
-        // Refrescamos los datos para ver los nuevos colores
+        setStep(2); setSelectedCells([]);
+        setTitular({ tipoDoc: 'DNI', numDoc: '', nombre: '', apellido: '', telefono: '' });
+        setOcupantesPorHab({}); setErrores({}); setAccionTipo('RESERVAR');
         handleBuscar();
     };
-
-    // (Opcional) Si quieres volver a cero
-    const resetFormularioCompleto = () => {
-        setStep(1);
-        setSelectedCells([]);
-        setNombre(''); setApellido(''); setTelefono(''); setNumDoc('');
-        setErrores({});
-        setAccionTipo('RESERVAR');
-    };
-
-    const getHabId = (hab) => hab.idHabitacion || hab.id;
+    const showConfirmAction = (t, d) => setActionModal({ isOpen: true, titulo: t, descripcion: d });
+    const closeAction = () => setActionModal({ ...actionModal, isOpen: false });
+    const getHabId = (h) => h.idHabitacion || h.id;
+    const habsSeleccionadasUnicas = habitaciones.filter(h => selectedCells.some(s => s.habId === getHabId(h)));
 
     return (
         <ProtectedRoute>
@@ -340,89 +287,52 @@ export default function ReservasPage() {
             {actionModal.isOpen && <ActionModal titulo={actionModal.titulo} descripcion={actionModal.descripcion} onCancel={closeAction} onConfirm={handleConfirmarReal} confirmText="Aceptar" />}
 
             <div className={styles.container}>
-                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <h1 className={styles.title} style={{ marginTop: '10px' }}>DISPONIBILIDAD DE HABITACIONES</h1>
-                </div>
-
+                <h1 className={styles.title}>DISPONIBILIDAD DE HABITACIONES</h1>
                 <div className={styles.formContainer}>
 
-                    {/* --- PASO 1: FECHAS --- */}
-                    <div className={styles.gridTop}>
-                        <div className={styles.fieldWrapper}>
-                            <label>Desde Fecha</label>
-                            <input
-                                type="date"
-                                className={styles.input}
-                                value={fechaDesde}
-                                onChange={(e) => setFechaDesde(e.target.value)}
-                                disabled={step > 1 || loading}
-                                min={todayString}
-                            />
+                    {/* PASO 1 y 2 */}
+                    {step === 1 && (
+                        <div className={styles.gridTop}>
+                            <div className={styles.fieldWrapper}>
+                                <label>Desde</label>
+                                <input type="date" className={styles.input} value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} min={todayString} />
+                            </div>
+                            <div className={styles.fieldWrapper}>
+                                <label>Hasta</label>
+                                <input type="date" className={styles.input} value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} min={fechaDesde || todayString} />
+                            </div>
+                            <button className={styles.btnBuscar} onClick={handleBuscar} disabled={loading}>{loading ? "..." : "BUSCAR"}</button>
                         </div>
-                        <div className={styles.fieldWrapper}>
-                            <label>Hasta Fecha</label>
-                            <input
-                                type="date"
-                                className={styles.input}
-                                value={fechaHasta}
-                                onChange={(e) => setFechaHasta(e.target.value)}
-                                disabled={step > 1 || loading}
-                                min={fechaDesde || todayString}
-                            />
-                        </div>
+                    )}
 
-                        {step === 1 && (
-                            <button className={styles.btnBuscar} onClick={handleBuscar} disabled={loading}>
-                                {loading ? "CARGANDO..." : "BUSCAR"}
-                            </button>
-                        )}
-                    </div>
-
-                    {/* --- PASO 2: MATRIZ --- */}
                     {step === 2 && (
                         <>
                             <div className={styles.topActions}>
-                                <div style={{ flex: 1 }}>
-                                    {selectedCells.length > 0 && (
-                                        <span style={{ fontWeight: 'bold', color: '#2196f3' }}>
-                                            {selectedCells.length} día(s) seleccionado(s)
-                                        </span>
-                                    )}
-                                </div>
                                 <button className={styles.btnVolverOrange} onClick={() => setStep(1)}>VOLVER</button>
-                                <button className={styles.btnOcuparBlue} onClick={() => handleIniciarProceso('OCUPAR')}>
-                                    OCUPAR ({selectedCells.length})
-                                </button>
-                                <button className={styles.btnReservarGreen} onClick={() => handleIniciarProceso('RESERVAR')}>
-                                    RESERVAR ({selectedCells.length})
-                                </button>
+                                <button className={styles.btnOcuparBlue} onClick={() => handleIniciarProceso('OCUPAR')}>OCUPAR ({selectedCells.length})</button>
+                                <button className={styles.btnReservarGreen} onClick={() => handleIniciarProceso('RESERVAR')}>RESERVAR ({selectedCells.length})</button>
                             </div>
                             <div className={styles.tableWrapper}>
                                 <table className={styles.matrixTable}>
                                     <thead>
                                     <tr>
-                                        <th className={styles.stickyCol}>Fecha / Habitación</th>
-                                        {habitaciones.map(hab => (
-                                            <th key={getHabId(hab)}>{hab.tipo}<br/><small>Hab. {hab.numero}</small></th>
-                                        ))}
+                                        <th className={styles.stickyCol}>Fecha</th>
+                                        {habitaciones.map(h => <th key={getHabId(h)}>{h.tipo}<br/>Hab. {h.numero}<br/><small style={{color:'#666'}}>Cap: {h.capacidad}</small></th>)}
                                     </tr>
                                     </thead>
                                     <tbody>
-                                    {daysRange.map((fecha) => (
-                                        <tr key={fecha}>
-                                            <td className={styles.stickyCol}><strong>{fecha}</strong></td>
-                                            {matrixData.map(hab => {
-                                                const infoDia = hab.estadosPorDia?.find(d => d.fecha === fecha);
-                                                const estado = infoDia?.estado || 'DISPONIBLE';
-                                                const currentId = getHabId(hab);
-                                                const isSelected = selectedCells.some(c => c.habId === currentId && c.fecha === fecha);
+                                    {daysRange.map(d => (
+                                        <tr key={d}>
+                                            <td className={styles.stickyCol}><b>{d}</b></td>
+                                            {matrixData.map(h => {
+                                                const info = h.estadosPorDia?.find(x => x.fecha === d);
+                                                const estado = info?.estado || 'DISPONIBLE';
+                                                const id = getHabId(h);
+                                                const sel = selectedCells.some(c => c.habId === id && c.fecha === d);
                                                 return (
-                                                    <td key={`${currentId}-${fecha}`} className={styles.cellCenter}>
-                                                        <div
-                                                            className={`${styles.checkboxSquare} ${styles[estado] || styles.DISPONIBLE} ${isSelected ? styles.selected : ''}`}
-                                                            onClick={() => handleCellClick(currentId, fecha, estado, hab.tipo, hab.numero)}
-                                                        >
-                                                            {isSelected ? "✓" : estado === 'DISPONIBLE' ? "+" : "x"}
+                                                    <td key={`${id}-${d}`} className={styles.cellCenter}>
+                                                        <div className={`${styles.checkboxSquare} ${styles[estado] || styles.DISPONIBLE} ${sel ? styles.selected : ''}`} onClick={() => handleCellClick(id, d, estado, h.tipo, h.numero, h.capacidad)}>
+                                                            {sel ? "✓" : estado === 'DISPONIBLE' ? "+" : "x"}
                                                         </div>
                                                     </td>
                                                 );
@@ -437,95 +347,131 @@ export default function ReservasPage() {
 
                     {/* --- PASO 3: FORMULARIO --- */}
                     {step === 3 && (
-                        <div style={{ animation: "fadeIn 0.3s" }}>
-                            <h3 style={{ textAlign: 'center', color: '#555' }}>
-                                Datos del Cliente ({accionTipo})
-                            </h3>
+                        <div className="animate-fadeIn">
+                            <h3 style={{ textAlign: 'center', marginBottom:'20px', color: '#444' }}>Datos del Cliente ({accionTipo})</h3>
 
                             <div className={styles.selectionInfo}>
-                                <p><b>Resumen:</b></p>
-                                <ul style={{ listStyle: 'none', padding: 0 }}>
+                                <p style={{margin:0, fontWeight:'bold'}}>Resumen de selección:</p>
+                                <ul style={{ listStyle: 'none', padding: 0, margin:'10px 0 0 0' }}>
                                     {selectedCells.map((s, i) => (
-                                        <li key={i} style={{ padding: '5px 0', borderBottom: '1px solid #ddd' }}>
-                                            {s.fecha} — Hab. {s.numero} ({s.tipoHabitacion})
-                                        </li>
+                                        <li key={i} style={{ fontSize:'0.9rem' }}>{s.fecha} — Hab. {s.numero} ({s.tipoHabitacion})</li>
                                     ))}
                                 </ul>
                             </div>
 
                             <form onSubmit={onFormSubmit}>
+                                {/* SECCIÓN TITULAR (Diseño Limpio) */}
+                                <div style={{marginTop:'20px'}}>
+                                    <h4 style={{color:'#666', borderBottom:'1px solid #ddd', paddingBottom:'5px', marginBottom:'15px'}}>Titular de la Reserva</h4>
 
-                                <div className={styles.gridMiddle}>
-                                    <div className={styles.fieldWrapper}>
-                                        <label>Tipo Doc</label>
-                                        <select className={styles.select} value={tipoDoc} onChange={e => setTipoDoc(e.target.value)}>
-                                            <option value="DNI">DNI</option>
-                                            <option value="PASAPORTE">PASAPORTE</option>
-                                            <option value="LE">LE</option>
-                                            <option value="LC">LC</option>
-                                            <option value="OTRO">OTRO</option>
-                                        </select>
+                                    <div className={styles.gridMiddle}>
+                                        <div className={styles.fieldWrapper}>
+                                            <label>Tipo Doc</label>
+                                            <select className={styles.select} value={titular.tipoDoc} onChange={e => handleTitularChange('tipoDoc', e.target.value)}>
+                                                <option>DNI</option><option>PASAPORTE</option>
+                                            </select>
+                                        </div>
+
+                                        {/* BUSCADOR DNI */}
+                                        <div className={styles.fieldWrapper}>
+                                            <label>Nro Doc (*)</label>
+                                            <div style={{display:'flex', gap:'8px'}}>
+                                                <input
+                                                    className={`${styles.input} ${errores.numDoc ? styles.inputError : ''}`}
+                                                    value={titular.numDoc}
+                                                    onChange={e => handleTitularChange('numDoc', e.target.value)}
+                                                    required
+                                                    placeholder="Ej: 12345678"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    className={styles.btnSearchSmall}
+                                                    onClick={buscarTitular}
+                                                    title="Buscar titular existente"
+                                                    disabled={buscandoTitular}
+                                                >
+                                                    {buscandoTitular ? "..." : "🔍"}
+                                                </button>
+                                            </div>
+                                            {errores.numDoc && <div className={styles.errorTooltip}>{errores.numDoc}</div>}
+                                        </div>
                                     </div>
 
-                                    {/* NRO DOC */}
-                                    <div className={styles.fieldWrapper}>
-                                        <label>Nro Doc (*)</label>
-                                        <input
-                                            className={`${styles.input} ${errores.numDoc ? styles.inputError : ''}`}
-                                            value={numDoc}
-                                            onChange={(e) => handleChange(e, setNumDoc, 'numDoc')}
-                                            required
-                                            placeholder="Ej: 12345678"
-                                        />
-                                        {errores.numDoc && <div className={styles.errorTooltip}>{errores.numDoc}</div>}
+                                    <div className={styles.gridBottom}>
+                                        <div className={styles.fieldWrapper}>
+                                            <label>Nombre (*)</label>
+                                            <input
+                                                className={`${styles.input} ${errores.nombre ? styles.inputError : ''}`}
+                                                value={titular.nombre}
+                                                onChange={e => handleTitularChange('nombre', e.target.value)}
+                                                required
+                                            />
+                                            {errores.nombre && <div className={styles.errorTooltip}>{errores.nombre}</div>}
+                                        </div>
+                                        <div className={styles.fieldWrapper}>
+                                            <label>Apellido (*)</label>
+                                            <input
+                                                className={`${styles.input} ${errores.apellido ? styles.inputError : ''}`}
+                                                value={titular.apellido}
+                                                onChange={e => handleTitularChange('apellido', e.target.value)}
+                                                required
+                                            />
+                                            {errores.apellido && <div className={styles.errorTooltip}>{errores.apellido}</div>}
+                                        </div>
+                                        <div className={styles.fieldWrapper}>
+                                            <label>Teléfono (*)</label>
+                                            <input
+                                                className={`${styles.input} ${errores.telefono ? styles.inputError : ''}`}
+                                                value={titular.telefono}
+                                                onChange={e => handleTitularChange('telefono', e.target.value)}
+                                                required
+                                            />
+                                            {errores.telefono && <div className={styles.errorTooltip}>{errores.telefono}</div>}
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className={styles.gridBottom}>
-                                    {/* NOMBRE */}
-                                    <div className={styles.fieldWrapper}>
-                                        <label>Nombre (*)</label>
-                                        <input
-                                            className={`${styles.input} ${errores.nombre ? styles.inputError : ''}`}
-                                            value={nombre}
-                                            onChange={(e) => handleChange(e, setNombre, 'nombre')}
-                                            required
-                                        />
-                                        {errores.nombre && <div className={styles.errorTooltip}>{errores.nombre}</div>}
-                                    </div>
+                                {/* SECCIÓN OCUPANTES */}
+                                <div className={styles.ocupantesContainer}>
+                                    <h4 style={{color:'#666', borderBottom:'1px solid #ddd', paddingBottom:'5px', marginBottom:'15px'}}>Ocupantes por Habitación</h4>
 
-                                    {/* APELLIDO */}
-                                    <div className={styles.fieldWrapper}>
-                                        <label>Apellido (*)</label>
-                                        <input
-                                            className={`${styles.input} ${errores.apellido ? styles.inputError : ''}`}
-                                            value={apellido}
-                                            onChange={(e) => handleChange(e, setApellido, 'apellido')}
-                                            required
-                                        />
-                                        {errores.apellido && <div className={styles.errorTooltip}>{errores.apellido}</div>}
-                                    </div>
+                                    {habsSeleccionadasUnicas.map(hab => {
+                                        const hId = getHabId(hab);
+                                        const ocupantes = ocupantesPorHab[hId] || [];
+                                        const lleno = ocupantes.length >= hab.capacidad;
 
-                                    {/* TELÉFONO */}
-                                    <div className={styles.fieldWrapper}>
-                                        <label>Teléfono (*)</label>
-                                        <input
-                                            className={`${styles.input} ${errores.telefono ? styles.inputError : ''}`}
-                                            value={telefono}
-                                            onChange={(e) => handleChange(e, setTelefono, 'telefono')}
-                                            required
-                                        />
-                                        {errores.telefono && <div className={styles.errorTooltip}>{errores.telefono}</div>}
-                                    </div>
+                                        return (
+                                            <div key={hId} className={styles.habitacionBlock}>
+                                                <div className={styles.habitacionTitle}>
+                                                    <span>Habitación {hab.numero} ({hab.tipo})</span>
+                                                    <span style={{fontSize:'0.85rem', color: lleno ? '#d32f2f' : '#388e3c'}}>
+                                                        ({ocupantes.length}/{hab.capacidad})
+                                                    </span>
+                                                </div>
+
+                                                {ocupantes.map((ocup, idx) => (
+                                                    <div key={idx} className={styles.ocupanteRow}>
+                                                        <span style={{color:'#999', fontSize:'0.8rem', width:'20px'}}>#{idx+1}</span>
+                                                        <input className={styles.inputSmall} placeholder="Nombre" value={ocup.nombre} onChange={e => handleOcupanteChange(hId, idx, 'nombre', e.target.value)} required />
+                                                        <input className={styles.inputSmall} placeholder="Apellido" value={ocup.apellido} onChange={e => handleOcupanteChange(hId, idx, 'apellido', e.target.value)} required />
+                                                        <input className={styles.inputSmall} placeholder="DNI" value={ocup.dni} onChange={e => handleOcupanteChange(hId, idx, 'dni', e.target.value)} required />
+                                                        <button type="button" className={styles.btnRemove} onClick={() => quitarOcupante(hId, idx)}>✕</button>
+                                                    </div>
+                                                ))}
+
+                                                {!lleno && (
+                                                    <button type="button" className={styles.btnAdd} onClick={() => agregarOcupante(hId, hab.capacidad)}>
+                                                        + Agregar Ocupante
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
 
                                 <div className={styles.footerActions}>
                                     <button type="button" className={styles.btnVolverOrange} onClick={() => setStep(2)}>VOLVER</button>
-
-                                    <button
-                                        type="submit"
-                                        className={accionTipo === 'OCUPAR' ? styles.btnOcuparBlue : styles.btnReservarGreen}
-                                    >
+                                    <button type="submit" className={accionTipo === 'OCUPAR' ? styles.btnOcuparBlue : styles.btnReservarGreen}>
                                         CONFIRMAR {accionTipo}
                                     </button>
                                 </div>
