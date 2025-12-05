@@ -1,0 +1,299 @@
+:global(body) {
+    background-color: #e6f4e6;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 1rem auto;
+    padding: 1.5rem;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e0e0e0;
+}
+
+/* 1. Encabezado */
+.header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    background-color: #f9fff9;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #d3ecd3;
+}
+
+.header h1 {
+    font-size: 2rem;
+    color: #333;
+    font-weight: 600;
+}
+
+.logoContainer {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-style: italic;
+    color: #555;
+}
+
+/* 2. Formulario de Búsqueda */
+.formBusqueda {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    align-items: flex-end;
+    background-color: #f9fff9;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #d3ecd3;
+}
+
+.formBusqueda .btnBuscar {
+    grid-column: 2 / 3;
+    justify-self: end;
+    background-color: #007bff;
+    color: white;
+    padding: 0.6rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.formBusqueda .btnBuscar:hover {
+    background-color: #0056b3;
+}
+
+/* --- GRUPOS DE INPUTS (Unificado) --- */
+.inputGroup {
+    display: flex;
+    flex-direction: column;
+    /* position: relative es CRUCIAL para que el popup se posicione respecto a este div */
+    position: relative;
+}
+
+.inputGroup label {
+    margin-bottom: 0.3rem;
+    font-weight: 500;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.inputGroup input,
+.inputGroup select {
+    padding: 0.6rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+/* 3. Tabla de Resultados CON SCROLL COMPACTO */
+.tableContainer {
+    margin-top: 1.5rem;
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    max-height: 310px;
+    overflow: auto;
+}
+
+.tableContainer table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 700px;
+    font-size: 0.85rem;
+}
+
+.tableContainer thead {
+    position: sticky;
+    top: 0;
+    background-color: #f9f9f9;
+    z-index: 10;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.tableContainer th,
+.tableContainer td {
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    white-space: nowrap;
+}
+
+.tableContainer th {
+    background-color: #f9f9f9;
+    font-weight: 600;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.tableContainer tr:last-child td {
+    border-bottom: none;
+}
+
+.tableContainer td:last-child {
+    text-align: center;
+}
+
+.tableContainer tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Estilos para la barra de scroll */
+.tableContainer::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.tableContainer::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.tableContainer::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.tableContainer::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Mensaje de error API */
+.errorApi {
+    color: #dc3545;
+    text-align: center;
+    margin: 0.8rem;
+    padding: 0.8rem;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+/* 4. Botones de Acción */
+.footerActions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f0f0f0;
+    gap: 1rem;
+}
+
+.btn {
+    padding: 0.6rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    text-decoration: none;
+    color: white;
+    display: inline-block;
+    text-align: center;
+    flex: 1;
+    max-width: 150px;
+    white-space: nowrap;
+}
+
+.btn:hover {
+    opacity: 0.85;
+}
+
+.btnCancelar {
+    background-color: #dc3545;
+}
+
+.btnCrear {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.btnAceptar {
+    background-color: #28a745;
+}
+
+.formBusqueda .btnBuscar:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* --- ESTILOS PARA VALIDACIÓN (ROJO) --- */
+
+.errorMsg {
+    color: #dc3545;
+    font-size: 0.85rem;
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+/* Borde y fondo rojo para el input inválido */
+.inputError {
+    border-color: #d32f2f !important;
+    background-color: #fff5f5;
+}
+
+/* LA BURBUJA FLOTANTE (POPUP) */
+.errorPopup {
+    position: absolute;
+    top: 100%; /* Se ubica justo debajo del input */
+    left: 0;
+    margin-top: 8px; /* Espacio entre input y burbuja */
+
+    background-color: #ffe6e6;
+    color: #d32f2f;
+    border: 1px solid #ffcccc;
+
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    z-index: 20; /* Se asegura de flotar sobre otros elementos */
+    min-width: 200px; /* Ancho mínimo para que el texto no se apriete */
+
+    /* Animación suave de entrada */
+    animation: fadeInPopup 0.2s ease-out;
+}
+
+@keyframes fadeInPopup {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* El triángulo ("piquito") hacia arriba (Borde) */
+.errorPopup::before {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    left: 15px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent transparent #ffcccc transparent;
+}
+
+/* El triángulo ("piquito") hacia arriba (Relleno para tapar el borde) */
+.errorPopup::after {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    left: 15px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent #ffe6e6 transparent;
+    margin-left: 1px;
+}
