@@ -81,10 +81,33 @@
 
 /* CHECKBOX */
 .checkboxSquare { width: 32px; height: 32px; margin: 0 auto; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; transition: transform 0.1s; border: 1px solid rgba(0,0,0,0.1); }
-.DISPONIBLE { background-color: #8bc34a; } .DISPONIBLE:hover { opacity: 0.85; } .DISPONIBLE.selected { box-shadow: 0 0 0 3px #2196f3; transform: scale(1.1); z-index: 5; position: relative; }
+
+/* ESTILO PARA DISPONIBLE */
+.DISPONIBLE { background-color: #8bc34a; }
+.DISPONIBLE:hover { opacity: 0.85; }
+
+/* ESTILO COMPARTIDO DE SELECCIÓN (AZUL) PARA VERDES Y AMARILLAS */
+.DISPONIBLE.selected,
+.RESERVADA.selected {
+    box-shadow: 0 0 0 3px #2196f3;
+    transform: scale(1.1);
+    z-index: 5;
+    position: relative;
+}
+
+/* ESTILO PARA OCUPADA (No clickeable) */
 .OCUPADA { background-color: #ef5350; cursor: not-allowed; opacity: 0.9; }
-.RESERVADA { background-color: #ff9800; cursor: not-allowed; opacity: 0.9; }
+
+/* ESTILO PARA RESERVADA (Ahora CLICKEABLE) */
+.RESERVADA {
+    background-color: #ff9800;
+    cursor: pointer; /* Cambiado de not-allowed a pointer */
+}
+.RESERVADA:hover { opacity: 0.85; } /* Agregado hover */
+
+/* ESTILO PARA MANTENIMIENTO */
 .MANTENIMIENTO { background-color: #e0e0e0; cursor: not-allowed; color: #757575; border-color: #bdbdbd; }
+
 
 /* --- 4. FORMULARIO CLIENTE --- */
 .selectionInfo { text-align: center; background-color: #e3f2fd; color: #0d47a1; padding: 1rem; border-radius: 6px; margin-bottom: 2rem; border: 1px solid #bbdefb; }
