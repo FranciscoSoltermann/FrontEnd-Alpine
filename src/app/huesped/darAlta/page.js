@@ -1,6 +1,5 @@
-// src/app/nuevo-huesped/page.jsx
-import Formulario from '../components/forms/Formulario';
-import ProtectedRoute from '../components/layout/ProtectedRoute';
+import Formulario from '../../components/forms/Formulario';
+import ProtectedRoute from '../../components/layout/ProtectedRoute';
 
 export default function page() {
     return (

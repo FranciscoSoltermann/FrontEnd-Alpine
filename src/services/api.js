@@ -36,7 +36,27 @@ export const buscarHuespedes = async (params) => {
     }
 };
 
-// --- HABITACIONES (NUEVO) ---
+export const eliminarHuesped = async (id) => {
+    // const token = localStorage.getItem('authToken');
+
+    const response = await fetch(`${API_URL}/huespedes/eliminar/${id}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            // 'Authorization': `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) {
+        // Manejamos el error del backend (ej: tiene reservas asociadas)
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'No se pudo eliminar el huésped.');
+    }
+
+    return await response.json();
+};
+
+// --- HABITACIONES ---
 export const obtenerDisponibilidad = async (fechaDesde, fechaHasta) => {
     try {
         // Usamos URLSearchParams para asegurar que los caracteres especiales se codifiquen bien

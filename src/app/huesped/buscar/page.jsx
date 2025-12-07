@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import ProtectedRoute from '../components/layout/ProtectedRoute.jsx';
+import ProtectedRoute from '../../components/layout/ProtectedRoute.jsx';
 import styles from './buscar.module.css';
 
-import { buscarHuespedes } from '../../services/api.js';
+import { buscarHuespedes } from '../../../services/api.js';
 
 export default function BuscarPage() {
     const [apellidos, setApellidos] = useState('');
@@ -235,7 +235,7 @@ export default function BuscarPage() {
                     <Link href="/dashboard" className={`${styles.btn} ${styles.btnCancelar}`}>
                         CANCELAR
                     </Link>
-                    <Link href="/darDeAlta" className={`${styles.btn} ${styles.btnCrear}`}>
+                    <Link href="/huesped/darAlta" className={`${styles.btn} ${styles.btnCrear}`}>
                         CREAR HUÉSPED
                     </Link>
                     <button className={`${styles.btn} ${styles.btnAceptar}`}>
