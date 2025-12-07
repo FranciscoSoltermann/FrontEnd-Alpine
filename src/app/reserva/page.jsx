@@ -169,12 +169,14 @@ export default function ReservasPage() {
     };
 
     // LOGICA SELECCIÓN
+    // MODIFICADO: Eliminamos la dependencia del idReserva, nos basamos en Habitación + Fecha
     const handleCellClick = (habId, fecha, estado, tipo, numero, capacidad) => {
         if (estado === 'OCUPADA' || estado === 'MANTENIMIENTO') return;
 
         setSelectedCells(prev => {
             const exists = prev.find(i => i.habId === habId && i.fecha === fecha);
             if (exists) return prev.filter(i => i !== exists);
+            // Guardamos la celda seleccionada
             return [...prev, { habId, fecha, tipoHabitacion: tipo, numero, capacidad, estadoOriginal: estado }];
         });
     };
@@ -182,10 +184,37 @@ export default function ReservasPage() {
     const handleIniciarProceso = (tipo) => {
         if (selectedCells.length === 0) return showError('Error', "Seleccione una celda.");
 
+        // --- LÓGICA CORREGIDA: ELIMINAR RESERVA POR SELECCIÓN ---
+        if (tipo === 'ELIMINAR') {
+            // Filtramos celdas amarillas
+            const celdasValidas = selectedCells.filter(c => c.estadoOriginal === 'RESERVADA');
+
+            if (celdasValidas.length === 0) {
+                return showError("Error", "Seleccione al menos una celda en estado RESERVADA (Amarillo) para eliminar.");
+            }
+
+            // Validamos que sea de la misma habitación (por simplicidad en la UI)
+            const primeraHab = celdasValidas[0].habId;
+            const mismaHabitacion = celdasValidas.every(c => c.habId === primeraHab);
+
+            if (!mismaHabitacion) {
+                return showError("Atención", "Por seguridad, elimine reservas de una habitación a la vez.");
+            }
+
+            // Configuramos el modal para confirmar eliminación usando los datos de la primera celda válida
+            // El backend se encargará de buscar la reserva activa en esa fecha.
+            setAccionTipo('ELIMINAR');
+            setTipoAccionModal('CONFIRMAR_OPERACION');
+            const celda = celdasValidas[0];
+            showConfirmAction("Eliminar Reserva", `¿Está seguro de eliminar la reserva de la Habitación ${celda.numero} asociada a la fecha ${celda.fecha}?`);
+            return;
+        }
+        // -------------------------------------
+
         if (tipo === 'RESERVAR') {
             const hayReservadas = selectedCells.some(cell => cell.estadoOriginal === 'RESERVADA');
             if (hayReservadas) {
-                return showError("Acción no válida", "Seleccionó habitaciones que YA están RESERVADAS. Use el botón 'OCUPAR' para confirmar el ingreso.");
+                return showError("Acción no válida", "Seleccionó habitaciones que YA están RESERVADAS. Use el botón 'OCUPAR' para confirmar el ingreso o 'ELIMINAR' si desea cancelar.");
             }
         }
 
@@ -216,6 +245,33 @@ export default function ReservasPage() {
     const handleConfirmarReal = async () => {
         closeAction();
         try {
+            // --- NUEVA LÓGICA: EJECUCIÓN DEL DELETE POR HABITACIÓN Y FECHA ---
+            if (accionTipo === 'ELIMINAR') {
+                // Tomamos una de las celdas seleccionadas para identificar la reserva
+                const celda = selectedCells.find(c => c.estadoOriginal === 'RESERVADA');
+
+                if (!celda) throw new Error("No hay celda reservada seleccionada.");
+
+                // Enviamos ID Habitación y Fecha. El backend buscará la reserva correspondiente.
+                const query = new URLSearchParams({
+                    idHabitacion: celda.habId,
+                    fecha: celda.fecha
+                });
+
+                const res = await fetch(`${API_URL}/reservas/cancelar?${query}`, {
+                    method: 'DELETE'
+                });
+
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.mensaje || "Error al eliminar la reserva.");
+                }
+
+                showSuccess('Reserva Eliminada', 'La reserva ha sido cancelada y la habitación liberada.');
+                return;
+            }
+            // ------------------------------------------
+
             const grupos = {};
             selectedCells.forEach(s => {
                 if (!grupos[s.habId]) grupos[s.habId] = [];
@@ -316,12 +372,12 @@ export default function ReservasPage() {
                                 <div className={styles.topActions}>
                                     <button className={styles.btnVolverOrange} onClick={() => setStep(1)}>VOLVER</button>
 
-                                    {/* BOTÓN OCUPAR: Siempre habilitado si hay selección */}
+                                    {/* BOTÓN OCUPAR */}
                                     <button className={styles.btnOcuparBlue} onClick={() => handleIniciarProceso('OCUPAR')}>
                                         OCUPAR ({selectedCells.length})
                                     </button>
 
-                                    {/* BOTÓN RESERVAR: DESHABILITADO SI HAY CELDAS RESERVADAS */}
+                                    {/* BOTÓN RESERVAR */}
                                     <button
                                         className={styles.btnReservarGreen}
                                         onClick={() => handleIniciarProceso('RESERVAR')}
@@ -330,6 +386,20 @@ export default function ReservasPage() {
                                         title={hayReservasSeleccionadas ? "No puede reservar habitaciones que ya están reservadas. Use OCUPAR." : "Crear nueva reserva"}
                                     >
                                         RESERVAR ({selectedCells.length})
+                                    </button>
+
+                                    {/* BOTÓN ELIMINAR RESERVA */}
+                                    <button
+                                        className={styles.btnEliminar}
+                                        style={!styles.btnEliminar ? {
+                                            backgroundColor: hayReservasSeleccionadas ? '#d32f2f' : '#ccc',
+                                            color: 'white', padding: '10px 25px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: hayReservasSeleccionadas ? 'pointer' : 'not-allowed', marginLeft: '10px'
+                                        } : { marginLeft: '10px' }}
+                                        onClick={() => handleIniciarProceso('ELIMINAR')}
+                                        disabled={!hayReservasSeleccionadas}
+                                        title="Eliminar la reserva seleccionada (Solo para Celdas Amarillas)"
+                                    >
+                                        ELIMINAR RESERVA
                                     </button>
                                 </div>
                                 <div className={styles.tableWrapper}>
@@ -347,11 +417,18 @@ export default function ReservasPage() {
                                                 {matrixData.map(h => {
                                                     const info = h.estadosPorDia?.find(x => x.fecha === d);
                                                     const estado = info?.estado || 'DISPONIBLE';
+
+                                                    // MODIFICADO: Ya no necesitamos idReserva aquí.
+                                                    // La lógica de borrado se basará en Habitación + Fecha.
                                                     const id = getHabId(h);
                                                     const sel = selectedCells.some(c => c.habId === id && c.fecha === d);
                                                     return (
                                                         <td key={`${id}-${d}`} className={styles.cellCenter}>
-                                                            <div className={`${styles.checkboxSquare} ${styles[estado] || styles.DISPONIBLE} ${sel ? styles.selected : ''}`} onClick={() => handleCellClick(id, d, estado, h.tipo, h.numero, h.capacidad)}>
+                                                            <div
+                                                                className={`${styles.checkboxSquare} ${styles[estado] || styles.DISPONIBLE} ${sel ? styles.selected : ''}`}
+                                                                // Eliminamos el pase de idReserva
+                                                                onClick={() => handleCellClick(id, d, estado, h.tipo, h.numero, h.capacidad)}
+                                                            >
                                                                 {sel ? "✓" : estado === 'DISPONIBLE' ? "+" : "x"}
                                                             </div>
                                                         </td>
