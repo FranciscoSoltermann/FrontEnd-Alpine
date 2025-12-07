@@ -1,9 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation'; // <--- IMPORTANTE: Para redirigir
-
-// --- IMPORTS ---
+import { useRouter } from 'next/navigation';
 import ProtectedRoute from '../components/layout/ProtectedRoute';
 import ErrorModal from '../components/ui/modals/ErrorModal';
 import SuccessModal from '../components/ui/modals/SuccessModal';
@@ -35,7 +33,7 @@ const getTodayString = () => {
 };
 
 export default function ReservasPage() {
-    const router = useRouter(); // Hook para redirección
+    const router = useRouter();
     const todayString = getTodayString();
 
     const [step, setStep] = useState(1);
@@ -51,36 +49,29 @@ export default function ReservasPage() {
     const [errorModal, setErrorModal] = useState({ isOpen: false, titulo: '', descripcion: '' });
     const [successModal, setSuccessModal] = useState({ isOpen: false, titulo: '', descripcion: '' });
     const [actionModal, setActionModal] = useState({ isOpen: false, titulo: '', descripcion: '' });
-
-    // Estado para saber qué acción ejecutar al confirmar el modal
-    // 'CONFIRMAR_OPERACION' | 'IR_A_NUEVO_HUESPED'
     const [tipoAccionModal, setTipoAccionModal] = useState('CONFIRMAR_OPERACION');
 
     // Filtros
     const [fechaDesde, setFechaDesde] = useState('');
     const [fechaHasta, setFechaHasta] = useState('');
 
-    // Datos Formulario (Titular)
+    // Datos Formulario
     const [titular, setTitular] = useState({
         tipoDoc: 'DNI', numDoc: '', nombre: '', apellido: '', telefono: ''
     });
-
     const [buscandoTitular, setBuscandoTitular] = useState(false);
     const [ocupantesPorHab, setOcupantesPorHab] = useState({});
     const [errores, setErrores] = useState({});
 
+    // --- DETECCIÓN DE CELDAS RESERVADAS ---
+    const hayReservasSeleccionadas = selectedCells.some(c => c.estadoOriginal === 'RESERVADA');
+
     // --- VALIDACIONES ---
     const validarInput = (campo, valor) => {
         let msg = "";
-        if (campo === 'numDoc' && valor && !/^[0-9]{7,8}$/.test(valor)) {
-            msg = "El DNI debe tener 7 u 8 números.";
-        }
-        if ((campo === 'nombre' || campo === 'apellido') && valor && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(valor)) {
-            msg = "Solo se permiten letras.";
-        }
-        if (campo === 'telefono' && valor && !/^[0-9]+$/.test(valor)) {
-            msg = "Solo se permiten números.";
-        }
+        if (campo === 'numDoc' && valor && !/^[0-9]{7,8}$/.test(valor)) msg = "El DNI debe tener 7 u 8 números.";
+        if ((campo === 'nombre' || campo === 'apellido') && valor && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(valor)) msg = "Solo se permiten letras.";
+        if (campo === 'telefono' && valor && !/^[0-9]+$/.test(valor)) msg = "Solo se permiten números.";
         setErrores(prev => ({ ...prev, [campo]: msg }));
     };
 
@@ -89,7 +80,6 @@ export default function ReservasPage() {
         validarInput(campo, valor);
     };
 
-    // --- BUSCAR TITULAR ---
     const buscarTitular = async () => {
         if (!titular.numDoc || titular.numDoc.length < 6) {
             setErrores(prev => ({...prev, numDoc: "Ingrese un DNI válido para buscar."}));
@@ -109,15 +99,9 @@ export default function ReservasPage() {
                 }));
                 setErrores(prev => ({ ...prev, nombre: '', apellido: '', telefono: '', numDoc: '' }));
             } else if (res.status === 404) {
-                // NO ENCONTRADO: Preguntamos si quiere ir a crear nuevo huésped
                 setTitular(prev => ({ ...prev, nombre: '', apellido: '', telefono: '' }));
-
-                // Configuramos el modal para redirigir
                 setTipoAccionModal('IR_A_NUEVO_HUESPED');
-                showConfirmAction(
-                    "Huésped no encontrado",
-                    `El DNI ${titular.numDoc} no está registrado. ¿Desea ir al formulario de Nuevo Huésped para darlo de alta?`
-                );
+                showConfirmAction("Huésped no encontrado", `El DNI ${titular.numDoc} no existe. ¿Ir a Nuevo Huésped?`);
             }
         } catch (e) {
             console.error(e);
@@ -134,7 +118,6 @@ export default function ReservasPage() {
             return { ...prev, [habId]: [...lista, { nombre: '', apellido: '', dni: '' }] };
         });
     };
-
     const quitarOcupante = (habId, index) => {
         setOcupantesPorHab(prev => {
             const lista = [...(prev[habId] || [])];
@@ -142,7 +125,6 @@ export default function ReservasPage() {
             return { ...prev, [habId]: lista };
         });
     };
-
     const handleOcupanteChange = (habId, index, campo, valor) => {
         setOcupantesPorHab(prev => {
             const lista = [...(prev[habId] || [])];
@@ -186,8 +168,10 @@ export default function ReservasPage() {
         }
     };
 
+    // LOGICA SELECCIÓN
     const handleCellClick = (habId, fecha, estado, tipo, numero, capacidad) => {
         if (estado === 'OCUPADA' || estado === 'MANTENIMIENTO') return;
+
         setSelectedCells(prev => {
             const exists = prev.find(i => i.habId === habId && i.fecha === fecha);
             if (exists) return prev.filter(i => i !== exists);
@@ -201,7 +185,7 @@ export default function ReservasPage() {
         if (tipo === 'RESERVAR') {
             const hayReservadas = selectedCells.some(cell => cell.estadoOriginal === 'RESERVADA');
             if (hayReservadas) {
-                return showError("Acción no válida", "Seleccionó habitaciones RESERVADAS. Use 'OCUPAR' para hacer Check-in.");
+                return showError("Acción no válida", "Seleccionó habitaciones que YA están RESERVADAS. Use el botón 'OCUPAR' para confirmar el ingreso.");
             }
         }
 
@@ -216,20 +200,15 @@ export default function ReservasPage() {
     const onFormSubmit = (e) => {
         e.preventDefault();
         if (Object.values(errores).some(m => m)) return showError("Error", "Corrija los campos en rojo.");
-
-        // Configuramos el modal para confirmar reserva
         setTipoAccionModal('CONFIRMAR_OPERACION');
         showConfirmAction(`Confirmar ${accionTipo}`, `¿Desea registrar esta operación?`);
     };
 
-    // --- GESTOR DE CONFIRMACIÓN DEL MODAL ---
     const handleModalConfirm = () => {
         if (tipoAccionModal === 'IR_A_NUEVO_HUESPED') {
-            // Acción 1: Redirigir a dar de alta
             closeAction();
             router.push('/darDeAlta');
         } else {
-            // Acción 2: Confirmar la reserva/ocupación
             handleConfirmarReal();
         }
     };
@@ -311,15 +290,7 @@ export default function ReservasPage() {
         <ProtectedRoute>
             {errorModal.isOpen && <ErrorModal titulo={errorModal.titulo} descripcion={errorModal.descripcion} onClose={closeError} />}
             {successModal.isOpen && <SuccessModal titulo={successModal.titulo} descripcion={successModal.descripcion} onClose={closeSuccess} />}
-
-            {/* MODAL DE ACCIÓN INTELIGENTE (Usa handleModalConfirm) */}
-            {actionModal.isOpen && <ActionModal
-                titulo={actionModal.titulo}
-                descripcion={actionModal.descripcion}
-                onCancel={closeAction}
-                onConfirm={handleModalConfirm}
-                confirmText="Aceptar"
-            />}
+            {actionModal.isOpen && <ActionModal titulo={actionModal.titulo} descripcion={actionModal.descripcion} onCancel={closeAction} onConfirm={handleModalConfirm} confirmText="Aceptar" />}
 
             <div className={styles.dashboardBackground}>
                 <div className={styles.container}>
@@ -344,8 +315,22 @@ export default function ReservasPage() {
                             <>
                                 <div className={styles.topActions}>
                                     <button className={styles.btnVolverOrange} onClick={() => setStep(1)}>VOLVER</button>
-                                    <button className={styles.btnOcuparBlue} onClick={() => handleIniciarProceso('OCUPAR')}>OCUPAR ({selectedCells.length})</button>
-                                    <button className={styles.btnReservarGreen} onClick={() => handleIniciarProceso('RESERVAR')}>RESERVAR ({selectedCells.length})</button>
+
+                                    {/* BOTÓN OCUPAR: Siempre habilitado si hay selección */}
+                                    <button className={styles.btnOcuparBlue} onClick={() => handleIniciarProceso('OCUPAR')}>
+                                        OCUPAR ({selectedCells.length})
+                                    </button>
+
+                                    {/* BOTÓN RESERVAR: DESHABILITADO SI HAY CELDAS RESERVADAS */}
+                                    <button
+                                        className={styles.btnReservarGreen}
+                                        onClick={() => handleIniciarProceso('RESERVAR')}
+                                        disabled={hayReservasSeleccionadas}
+                                        style={hayReservasSeleccionadas ? { opacity: 0.5, cursor: 'not-allowed', backgroundColor: '#ccc' } : {}}
+                                        title={hayReservasSeleccionadas ? "No puede reservar habitaciones que ya están reservadas. Use OCUPAR." : "Crear nueva reserva"}
+                                    >
+                                        RESERVAR ({selectedCells.length})
+                                    </button>
                                 </div>
                                 <div className={styles.tableWrapper}>
                                     <table className={styles.matrixTable}>
@@ -419,67 +404,55 @@ export default function ReservasPage() {
                                         <div className={styles.gridBottom}>
                                             <div className={styles.fieldWrapper}>
                                                 <label>Nombre (*)</label>
-                                                {/* Agregamos readOnly */}
-                                                <input
-                                                    className={`${styles.input} ${styles.inputReadOnly}`} // Puedes crear un estilo grisáceo si quieres
-                                                    value={titular.nombre}
-                                                    readOnly
-                                                />
+                                                <input className={`${styles.input} ${styles.inputReadOnly}`} value={titular.nombre} readOnly />
                                             </div>
                                             <div className={styles.fieldWrapper}>
                                                 <label>Apellido (*)</label>
-                                                {/* Agregamos readOnly */}
-                                                <input
-                                                    className={`${styles.input}`}
-                                                    value={titular.apellido}
-                                                    readOnly
-                                                />
+                                                <input className={`${styles.input}`} value={titular.apellido} readOnly />
                                             </div>
                                             <div className={styles.fieldWrapper}>
                                                 <label>Teléfono (*)</label>
-                                                {/* Agregamos readOnly */}
-                                                <input
-                                                    className={`${styles.input}`}
-                                                    value={titular.telefono}
-                                                    readOnly
-                                                />
+                                                <input className={`${styles.input}`} value={titular.telefono} readOnly />
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div style={{marginTop:'30px'}}>
-                                        <h4 style={{color:'#666', borderBottom:'1px solid #ddd', paddingBottom:'5px', marginBottom:'15px'}}>Ocupantes por Habitación</h4>
-                                        {habsSeleccionadasUnicas.map(hab => {
-                                            const hId = getHabId(hab);
-                                            const ocupantes = ocupantesPorHab[hId] || [];
-                                            const lleno = ocupantes.length >= hab.capacidad;
+                                    {/* SECCIÓN OCUPANTES: SOLO VISIBLE SI LA ACCIÓN ES OCUPAR */}
+                                    {accionTipo === 'OCUPAR' && (
+                                        <div style={{marginTop:'30px'}}>
+                                            <h4 style={{color:'#666', borderBottom:'1px solid #ddd', paddingBottom:'5px', marginBottom:'15px'}}>Ocupantes por Habitación</h4>
+                                            {habsSeleccionadasUnicas.map(hab => {
+                                                const hId = getHabId(hab);
+                                                const ocupantes = ocupantesPorHab[hId] || [];
+                                                const lleno = ocupantes.length >= hab.capacidad;
 
-                                            return (
-                                                <div key={hId} className={styles.habitacionBlock}>
-                                                    <div className={styles.habitacionTitle}>
-                                                        <span>Habitación {hab.numero} ({hab.tipo})</span>
-                                                        <span style={{fontSize:'0.85rem', color: lleno ? '#d32f2f' : '#388e3c'}}>
-                                                            ({ocupantes.length}/{hab.capacidad})
-                                                        </span>
-                                                    </div>
-                                                    {ocupantes.map((ocup, idx) => (
-                                                        <div key={idx} className={styles.ocupanteRow}>
-                                                            <span style={{color:'#999', fontSize:'0.8rem', width:'20px'}}>#{idx+1}</span>
-                                                            <input className={styles.inputSmall} placeholder="Nombre" value={ocup.nombre} onChange={e => handleOcupanteChange(hId, idx, 'nombre', e.target.value)} required />
-                                                            <input className={styles.inputSmall} placeholder="Apellido" value={ocup.apellido} onChange={e => handleOcupanteChange(hId, idx, 'apellido', e.target.value)} required />
-                                                            <input className={styles.inputSmall} placeholder="DNI" value={ocup.dni} onChange={e => handleOcupanteChange(hId, idx, 'dni', e.target.value)} required />
-                                                            <button type="button" className={styles.btnRemove} onClick={() => quitarOcupante(hId, idx)}>✕</button>
+                                                return (
+                                                    <div key={hId} className={styles.habitacionBlock}>
+                                                        <div className={styles.habitacionTitle}>
+                                                            <span>Habitación {hab.numero} ({hab.tipo})</span>
+                                                            <span style={{fontSize:'0.85rem', color: lleno ? '#d32f2f' : '#388e3c'}}>
+                                                                ({ocupantes.length}/{hab.capacidad})
+                                                            </span>
                                                         </div>
-                                                    ))}
-                                                    {!lleno && (
-                                                        <button type="button" className={styles.btnAdd} onClick={() => agregarOcupante(hId, hab.capacidad)}>
-                                                            + Agregar Ocupante
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                                                        {ocupantes.map((ocup, idx) => (
+                                                            <div key={idx} className={styles.ocupanteRow}>
+                                                                <span style={{color:'#999', fontSize:'0.8rem', width:'20px'}}>#{idx+1}</span>
+                                                                <input className={styles.inputSmall} placeholder="Nombre" value={ocup.nombre} onChange={e => handleOcupanteChange(hId, idx, 'nombre', e.target.value)} required />
+                                                                <input className={styles.inputSmall} placeholder="Apellido" value={ocup.apellido} onChange={e => handleOcupanteChange(hId, idx, 'apellido', e.target.value)} required />
+                                                                <input className={styles.inputSmall} placeholder="DNI" value={ocup.dni} onChange={e => handleOcupanteChange(hId, idx, 'dni', e.target.value)} required />
+                                                                <button type="button" className={styles.btnRemove} onClick={() => quitarOcupante(hId, idx)}>✕</button>
+                                                            </div>
+                                                        ))}
+                                                        {!lleno && (
+                                                            <button type="button" className={styles.btnAdd} onClick={() => agregarOcupante(hId, hab.capacidad)}>
+                                                                + Agregar Ocupante
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
 
                                     <div className={styles.footerActions}>
                                         <button type="button" className={styles.btnVolverOrange} onClick={() => setStep(2)}>VOLVER</button>

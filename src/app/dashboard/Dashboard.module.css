@@ -1,7 +1,7 @@
 /* src/app/dashboard/Dashboard.module.css */
 
 .dashboardBackground {
-    background-color: #f3f4f6; /* Un gris muy suave es más moderno que el verde */
+    background-color: #e6f5e6; /* Un gris muy suave es más moderno que el verde */
     min-height: calc(100vh - 60px);
     padding: 3rem 2rem;
 }
