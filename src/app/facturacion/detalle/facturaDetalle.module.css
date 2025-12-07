@@ -1,163 +1,244 @@
-/* /src/app/facturacion/detalle/FacturaDetalle.module.css */
+/* --- ESTILOS DE PANTALLA --- */
 
 .container {
+    background-color: #525252; /* Fondo gris oscuro para resaltar la hoja */
     min-height: 100vh;
-    background-color: #525659; /* Fondo gris oscuro tipo visor de PDF */
+    padding: 40px 20px;
     display: flex;
     justify-content: center;
-    padding: 40px 20px;
-    font-family: 'Courier New', Courier, monospace; /* Fuente tipo impresora */
-}
-
-.invoicePaper {
-    background-color: white;
-    width: 100%;
-    max-width: 800px;
-    padding: 40px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    position: relative;
-    color: #333;
-}
-
-/* --- ENCABEZADO HOTEL --- */
-.header {
-    border-bottom: 2px solid #000;
-    padding-bottom: 20px;
-    margin-bottom: 30px;
-    display: flex;
-    justify-content: space-between;
     align-items: flex-start;
 }
 
-.hotelInfo h1 {
-    margin: 0;
+.facturaPaper {
+    background: white;
+    width: 100%;
+    /* Simulamos una hoja A4 real para que se vea igual que al imprimir */
+    max-width: 210mm;
+    min-height: 297mm;
+    padding: 40px; /* Margen interno de la hoja */
+    border-radius: 2px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+    position: relative;
+    box-sizing: border-box;
+}
+
+/* ENCABEZADO */
+.header {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 2px solid #000;
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+    position: relative;
+}
+
+.empresaInfo h1 {
+    margin: 0 0 5px 0;
     font-size: 1.8rem;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    color: #111;
 }
 
-.hotelInfo p {
+.empresaInfo p {
     margin: 2px 0;
-    font-size: 0.8rem;
     color: #555;
+    font-size: 0.95rem;
 }
 
-.invoiceData {
+.facturaInfo {
     text-align: right;
 }
 
-.invoiceType {
-    font-size: 3rem;
-    font-weight: bold;
-    border: 3px solid #000;
-    width: 60px;
-    height: 60px;
+.facturaInfo h2 {
+    margin: 0;
+    font-size: 2rem;
+    color: #333;
+    letter-spacing: 2px;
+}
+
+/* La letra A o B en el medio */
+.letraGrande {
+    width: 50px;
+    height: 50px;
+    background: white;
+    color: black;
+    font-size: 28px;
+    font-weight: 800;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-left: auto;
-    margin-bottom: 10px;
-    background: #f0f0f0;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 2px solid black;
+    z-index: 10;
 }
 
-/* --- DATOS CLIENTE --- */
-.clientSection {
-    margin-bottom: 30px;
-    padding: 15px;
+/* DATOS CLIENTE */
+.clienteInfo {
     border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 6px;
     background-color: #fcfcfc;
+    margin-bottom: 30px;
 }
 
-.clientRow {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 5px;
+.clienteInfo p {
+    margin: 5px 0;
+    font-size: 1rem;
+    color: #333;
 }
 
-.label {
-    font-weight: bold;
-    margin-right: 10px;
-}
-
-/* --- TABLA --- */
-.table {
+/* TABLA */
+.tablaDetalle {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 30px;
 }
 
-.table th {
+.tablaDetalle th {
+    background-color: #f3f4f6;
+    color: #111;
+    font-weight: 700;
+    padding: 12px;
     border-bottom: 2px solid #000;
     text-align: left;
-    padding: 10px;
+    font-size: 0.9rem;
     text-transform: uppercase;
-    font-size: 0.85rem;
 }
 
-.table td {
-    padding: 10px;
+.tablaDetalle td {
+    padding: 12px;
     border-bottom: 1px solid #eee;
+    font-size: 0.95rem;
+    color: #444;
 }
 
-.colRight {
-    text-align: right;
-}
-
-/* --- TOTALES --- */
-.footer {
+/* TOTALES */
+.footerTotales {
     display: flex;
-    justify-content: flex-end;
+    flex-direction: column;
+    align-items: flex-end;
     margin-top: 20px;
-    border-top: 2px solid #000;
-    padding-top: 10px;
 }
 
-.totals {
-    width: 250px;
-}
-
-.totalRow {
+.filaTotal {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 5px;
+    width: 300px; /* Ancho fijo para alinear números */
+    margin-bottom: 8px;
+    font-size: 1rem;
 }
 
-.grandTotal {
+.totalFinal {
     font-size: 1.5rem;
-    font-weight: bold;
+    font-weight: 800;
+    border-top: 2px solid #000;
+    padding-top: 15px;
     margin-top: 10px;
-    border-top: 1px dashed #999;
-    padding-top: 10px;
+    color: #000;
 }
 
-/* --- BOTONES DE ACCIÓN (NO SE IMPRIMEN) --- */
+/* BOTONES (Se ven lindos en pantalla) */
 .actions {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
+    margin-top: 50px;
     display: flex;
+    justify-content: flex-end;
     gap: 15px;
+    padding-top: 20px;
+    border-top: 1px dashed #ccc;
 }
 
-.btn {
-    padding: 15px 25px;
-    border-radius: 50px;
+.btnVolver, .btnImprimir {
+    padding: 12px 24px;
     border: none;
-    font-weight: bold;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    font-family: 'Segoe UI', sans-serif; /* Fuente normal para botones */
-    transition: transform 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-.btn:hover { transform: translateY(-3px); }
+.btnVolver {
+    background-color: #fff;
+    border: 1px solid #d1d5db;
+    color: #374151;
+}
 
-.btnPrint { background-color: #2563eb; color: white; }
-.btnBack { background-color: #4b5563; color: white; }
+.btnVolver:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+}
 
-/* Ocultar botones al imprimir */
+.btnImprimir {
+    background-color: #2563eb;
+    color: white;
+}
+
+.btnImprimir:hover {
+    background-color: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+}
+
+/* --- ESTILOS DE IMPRESIÓN (MAGIC) --- */
 @media print {
-    .container { background-color: white; padding: 0; }
-    .invoicePaper { box-shadow: none; max-width: 100%; padding: 0; }
-    .actions { display: none; }
+    /* 1. Ocultar todo lo que no sea la hoja */
+    .actions,
+    .btnVolver,
+    .btnImprimir {
+        display: none !important;
+    }
+
+    /* 2. Resetear márgenes de página */
+    @page {
+        margin: 0;
+        size: auto;
+    }
+
+    body {
+        margin: 0;
+        background-color: white;
+        -webkit-print-color-adjust: exact; /* Para que Chrome imprima colores de fondo */
+        print-color-adjust: exact;
+    }
+
+    /* 3. Ajustar el contenedor para que sea la hoja pura */
+    .container {
+        background-color: white;
+        padding: 0;
+        margin: 0;
+        display: block;
+        min-height: auto;
+    }
+
+    .facturaPaper {
+        width: 100%;
+        max-width: 100%;
+        box-shadow: none;
+        margin: 0;
+        padding: 20px 40px; /* Padding razonable para impresora */
+        border-radius: 0;
+    }
+
+    /* Ajustes finos para tinta */
+    .header {
+        border-bottom: 2px solid #000;
+    }
+
+    .clienteInfo {
+        background-color: transparent; /* Ahorrar tinta de fondo */
+        border: 1px solid #999;
+    }
+
+    /* Asegurar que los colores de tabla salgan */
+    .tablaDetalle th {
+        background-color: #eee !important;
+        -webkit-print-color-adjust: exact;
+    }
 }

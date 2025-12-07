@@ -82,6 +82,27 @@ export const obtenerDisponibilidad = async (fechaDesde, fechaHasta) => {
     }
 };
 
+export const cargarConsumo = async (datos) => {
+    // const token = localStorage.getItem('authToken');
+
+    const response = await fetch(`${API_URL}/consumos/cargar`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            // 'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(datos)
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        // El backend devuelve { "error": "mensaje" } en caso de fallo
+        throw new Error(errorData.error || 'Error al cargar el consumo');
+    }
+
+    return await response.json();
+};
+
 // --- RESPONSABLES DE PAGO (Nuevo) ---
 export const crearResponsablePago = async (datos) => {
     // const token = localStorage.getItem('authToken'); // Descomentar si usas seguridad

@@ -14,7 +14,7 @@ import {
     FaBed,
     FaKey,
     FaPrint,
-    FaChartLine     // Un icono genérico para admin si se necesita
+    FaChartLine, FaCoffee     // Un icono genérico para admin si se necesita
 } from 'react-icons/fa';
 
 export default function DashboardPage() {
@@ -92,7 +92,13 @@ export default function DashboardPage() {
                                 <p>Realizar Check-out y generar comprobantes.</p>
                             </Link>
 
-                            {/* Puedes agregar más aquí, como "Reportes", "Caja", etc. */}
+                            {/* Consumos */}
+                            <Link href="/consumos/cargar" className={styles.card}>
+                                <div className={styles.iconWrapper}><FaCoffee size={32}/></div>
+                                <h3>Cargar Consumo</h3>
+                                <p>Registrar productos o servicios a una habitación.</p>
+                            </Link>
+
                         </div>
                     </section>
 
