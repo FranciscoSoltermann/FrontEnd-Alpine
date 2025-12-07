@@ -1,62 +1,90 @@
-/* src/app/components/Dashboard.module.css */
+/* src/app/dashboard/Dashboard.module.css */
 
 .dashboardBackground {
-  background-color: #e6f5e6; /* Fondo verde pálido */
-  min-height: calc(100vh - 60px); /* Altura total menos el header */
-  padding: 3rem;
+    background-color: #e6f5e6; /* Un gris muy suave es más moderno que el verde */
+    min-height: calc(100vh - 60px);
+    padding: 3rem 2rem;
 }
 
 .dashboardContainer {
-  max-width: 1200px;
-  margin: 0 auto;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 2rem;
-  border-bottom: 2px solid #ccc;
-  padding-bottom: 1rem;
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #1f2937; /* Gris oscuro */
+    margin-bottom: 2rem;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
+/* --- ESTILOS DE SECCIÓN --- */
+.section {
+    margin-bottom: 3rem;
+}
+
+.sectionTitle {
+    font-size: 1.4rem;
+    color: #4b5563; /* Gris medio */
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+/* --- GRID Y TARJETAS --- */
 .grid {
-  display: grid;
-  /* 2 columnas en escritorio, 1 en móvil */
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
+    display: grid;
+    /* Responsive: Se adapta automáticamente */
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
 }
 
 .card {
-  background: #ffffff;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  text-decoration: none;
-  color: #333;
-  transition: all 0.2s ease-in-out;
-  border-left: 5px solid #007bff; /* Un detalle de color azul */
+    background: #ffffff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    text-decoration: none;
+    color: #333;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    border: 1px solid #f0f0f0;
 }
 
 .card:hover {
-  transform: translateY(-5px); /* Efecto de "levantar" */
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-  border-left-color: #0056b3; /* Azul más oscuro */
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    border-color: #3b82f6; /* Borde azul al pasar el mouse */
 }
 
-.card h2 {
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
-  font-size: 1.5rem;
+/* Contenedor del ícono para darle color de fondo suave */
+.iconWrapper {
+    background-color: #eff6ff; /* Azul muy claro */
+    color: #2563eb; /* Azul fuerte */
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
 }
 
 .card p {
-  font-size: 1rem;
-  color: #555;
-  line-height: 1.5;
-}
-
-/* Color de los íconos */
-.card svg {
-  color: #007bff;
+    font-size: 0.95rem;
+    color: #6b7280;
+    line-height: 1.5;
+    margin: 0;
 }

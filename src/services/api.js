@@ -62,6 +62,89 @@ export const obtenerDisponibilidad = async (fechaDesde, fechaHasta) => {
     }
 };
 
+// --- RESPONSABLES DE PAGO (Nuevo) ---
+export const crearResponsablePago = async (datos) => {
+    // const token = localStorage.getItem('authToken'); // Descomentar si usas seguridad
+
+    const response = await fetch(`${API_URL}/responsables/crear-juridica`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            // 'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(datos)
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al crear el responsable de pago');
+    }
+
+    return await response.json();
+};
+
+export const buscarResponsablePorCuit = async (cuit) => {
+    // const token = localStorage.getItem('authToken');
+    const response = await fetch(`${API_URL}/responsables/buscar-cuit?cuit=${cuit}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            // 'Authorization': `Bearer ${token}`
+        }
+    });
+
+    if (response.status === 404) {
+        return null; // No existe
+    }
+
+    if (!response.ok) {
+        throw new Error('Error al buscar el CUIT');
+    }
+
+    return await response.json();
+};
+
+// --- FACTURACIÓN ---
+export const previsualizarFactura = async (habitacion, horaSalida) => {
+
+    try {
+        const query = new URLSearchParams({ habitacion, horaSalida }).toString();
+
+        const response = await fetch(`${API_URL}/facturas/previsualizar?${query}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        await manejarErrores(response);
+        return await response.json();
+
+    } catch (error) {
+        console.error('Error en previsualizarFactura:', error.message);
+        throw new Error(error.message || 'No se pudo generar la previsualización de la factura.');
+    }
+};
+
+export const crearFactura = async (solicitudDTO) => {
+    try {
+        const response = await fetch(`${API_URL}/facturas/crear`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(solicitudDTO)
+        });
+
+        await manejarErrores(response);
+        return await response.json();
+
+    } catch (error) {
+        console.error('Error en crearFactura:', error.message);
+        throw new Error(error.message || 'No se pudo crear la factura.');
+    }
+};
+
 // --- UTILS: MANEJO DE ERRORES CENTRALIZADO ---
 // Extraje tu lógica de error a una función auxiliar para no repetirla
 async function manejarErrores(response) {

@@ -1,0 +1,163 @@
+/* /src/app/facturacion/detalle/FacturaDetalle.module.css */
+
+.container {
+    min-height: 100vh;
+    background-color: #525659; /* Fondo gris oscuro tipo visor de PDF */
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+    font-family: 'Courier New', Courier, monospace; /* Fuente tipo impresora */
+}
+
+.invoicePaper {
+    background-color: white;
+    width: 100%;
+    max-width: 800px;
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    position: relative;
+    color: #333;
+}
+
+/* --- ENCABEZADO HOTEL --- */
+.header {
+    border-bottom: 2px solid #000;
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.hotelInfo h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.hotelInfo p {
+    margin: 2px 0;
+    font-size: 0.8rem;
+    color: #555;
+}
+
+.invoiceData {
+    text-align: right;
+}
+
+.invoiceType {
+    font-size: 3rem;
+    font-weight: bold;
+    border: 3px solid #000;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    margin-bottom: 10px;
+    background: #f0f0f0;
+}
+
+/* --- DATOS CLIENTE --- */
+.clientSection {
+    margin-bottom: 30px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    background-color: #fcfcfc;
+}
+
+.clientRow {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.label {
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+/* --- TABLA --- */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+}
+
+.table th {
+    border-bottom: 2px solid #000;
+    text-align: left;
+    padding: 10px;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+}
+
+.table td {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.colRight {
+    text-align: right;
+}
+
+/* --- TOTALES --- */
+.footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+    border-top: 2px solid #000;
+    padding-top: 10px;
+}
+
+.totals {
+    width: 250px;
+}
+
+.totalRow {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.grandTotal {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-top: 10px;
+    border-top: 1px dashed #999;
+    padding-top: 10px;
+}
+
+/* --- BOTONES DE ACCIÓN (NO SE IMPRIMEN) --- */
+.actions {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    display: flex;
+    gap: 15px;
+}
+
+.btn {
+    padding: 15px 25px;
+    border-radius: 50px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    font-family: 'Segoe UI', sans-serif; /* Fuente normal para botones */
+    transition: transform 0.2s;
+}
+
+.btn:hover { transform: translateY(-3px); }
+
+.btnPrint { background-color: #2563eb; color: white; }
+.btnBack { background-color: #4b5563; color: white; }
+
+/* Ocultar botones al imprimir */
+@media print {
+    .container { background-color: white; padding: 0; }
+    .invoicePaper { box-shadow: none; max-width: 100%; padding: 0; }
+    .actions { display: none; }
+}
