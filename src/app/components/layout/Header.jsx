@@ -25,16 +25,6 @@ export default function Header() {
                     {user ? (
                         // --- SI EL USUARIO SÍ EXISTE ---
                         <>
-                            {/* <li>
-                                <Link href="/">Alta Huésped</Link>
-                                </li>
-                            */}
-
-                            {/* AQUI ESTÁ LA CORRECCIÓN: El link va fuera del comentario */}
-                            <li>
-                                <Link href="/facturacion">Facturación</Link>
-                            </li>
-
                             <li>
                                 <button onClick={handleLogout} className={styles.logoutButton}>
                                     Cerrar Sesión

@@ -14,7 +14,7 @@ import {
     FaBed,
     FaKey,
     FaPrint,
-    FaChartLine     // Un icono genérico para admin si se necesita
+    FaChartLine, FaCoffee     // Un icono genérico para admin si se necesita
 } from 'react-icons/fa';
 
 export default function DashboardPage() {
@@ -30,21 +30,21 @@ export default function DashboardPage() {
                         <div className={styles.grid}>
 
                             {/* Buscar / Gestionar Huésped */}
-                            <Link href="/buscar" className={styles.card}>
+                            <Link href="huesped/buscar" className={styles.card}>
                                 <div className={styles.iconWrapper}><FaSearch size={32}/></div>
                                 <h3>Buscar Huésped</h3>
                                 <p>Consultar, modificar o dar de alta nuevos huéspedes.</p>
                             </Link>
 
                             {/* Alta Responsable de Pago */}
-                            <Link href="/nuevo-responsable" className={styles.card}>
+                            <Link href="/nuevo-responsable?origen=dashboard" className={styles.card}>
                                 <div className={styles.iconWrapper}><FaUserTie size={32}/></div>
                                 <h3>Alta Responsable</h3>
                                 <p>Registrar empresas o terceros para facturación.</p>
                             </Link>
 
                             {/* Baja Huésped */}
-                            <Link href="/baja" className={styles.card}>
+                            <Link href="huesped/darBaja" className={styles.card}>
                                 <div className={styles.iconWrapper}><FaUserMinus size={32}/></div>
                                 <h3>Baja Huésped</h3>
                                 <p>Eliminar registros del sistema.</p>
@@ -92,7 +92,13 @@ export default function DashboardPage() {
                                 <p>Realizar Check-out y generar comprobantes.</p>
                             </Link>
 
-                            {/* Puedes agregar más aquí, como "Reportes", "Caja", etc. */}
+                            {/* Consumos */}
+                            <Link href="/consumos/cargar" className={styles.card}>
+                                <div className={styles.iconWrapper}><FaCoffee size={32}/></div>
+                                <h3>Cargar Consumo</h3>
+                                <p>Registrar productos o servicios a una habitación.</p>
+                            </Link>
+
                         </div>
                     </section>
 

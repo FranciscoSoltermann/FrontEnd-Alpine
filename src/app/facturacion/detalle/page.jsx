@@ -2,124 +2,129 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import styles from './facturaDetalle.module.css';
-import { FaPrint, FaArrowLeft } from 'react-icons/fa';
+import styles from './facturaDetalle.module.css'; // Asegúrate de tener este CSS o reutiliza uno
+import { FaPrint, FaArrowLeft, FaCheckCircle } from 'react-icons/fa';
 
-export default function FacturaDetallePage() {
+export default function DetalleFacturaPage() {
     const router = useRouter();
     const [factura, setFactura] = useState(null);
 
     useEffect(() => {
+        // Recuperamos los datos que guardamos en el paso anterior
         const data = localStorage.getItem('ultimaFactura');
         if (data) {
             setFactura(JSON.parse(data));
         } else {
-            router.push('/dashboard');
+            router.push('/facturacion'); // Si no hay datos, volver al inicio
         }
     }, [router]);
 
-    if (!factura) return <div className="text-white text-center mt-10">Generando vista previa...</div>;
+    if (!factura) return null;
+
+    // --- CÁLCULOS DE IVA ---
+    const esFacturaA = factura.tipoFactura === 'A';
+    const TASA_IVA = 0.21;
+
+    // Función auxiliar para mostrar precios
+    const formatCurrency = (valor) => {
+        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(valor);
+    };
+
+    // Si es A, los precios unitarios en la lista deben verse SIN IVA (Netos)
+    // Si es B, se ven CON IVA (Finales)
+    const calcularPrecioMostrar = (precioFinal) => {
+        return esFacturaA ? (precioFinal / (1 + TASA_IVA)) : precioFinal;
+    };
+
+    const subtotalNeto = esFacturaA ? (factura.total / (1 + TASA_IVA)) : factura.total;
+    const montoIva = esFacturaA ? (factura.total - subtotalNeto) : 0;
 
     return (
         <div className={styles.container}>
+            <div className={styles.facturaPaper}>
 
-            {/* HOJA DE FACTURA */}
-            <div className={styles.invoicePaper}>
-
-                {/* HEADER (Datos del Hotel) */}
-                <div className={styles.header}>
-                    <div className={styles.hotelInfo}>
-                        <h1>Hotel Premier</h1>
+                {/* ENCABEZADO */}
+                <header className={styles.header}>
+                    <div className={styles.empresaInfo}>
+                        <h1>HOTEL PREMIER</h1>
                         <p>Av. Siempre Viva 123, Santa Fe</p>
                         <p>IVA Responsable Inscripto</p>
-                        <p>CUIT: 30-11223344-9</p>
                     </div>
-                    <div className={styles.invoiceData}>
-                        <div className={styles.invoiceType}>{factura.tipoFactura}</div>
-                        <h3>FACTURA</h3>
-                        <p><strong>Nro:</strong> 0001-{String(factura.id || 0).padStart(8, '0')}</p>
+                    <div className={styles.facturaInfo}>
+                        <div className={styles.letraGrande}>{factura.tipoFactura}</div>
+                        <h2>FACTURA</h2>
+                        <p><strong>N°:</strong> {String(factura.id).padStart(8, '0')}</p>
                         <p><strong>Fecha:</strong> {new Date().toLocaleDateString()}</p>
                     </div>
+                </header>
+
+                <div className={styles.clienteInfo}>
+                    <p><strong>Señor(es):</strong> {factura.responsableNombre}</p>
+                    <p><strong>{factura.tipoFactura === 'A' ? 'CUIT' : 'DNI'}:</strong> {factura.responsableDoc}</p>
+                    <p><strong>Condición IVA:</strong> {factura.tipoFactura === 'A' ? 'Responsable Inscripto' : 'Consumidor Final'}</p>
                 </div>
 
-                {/* DATOS CLIENTE */}
-                <div className={styles.clientSection}>
-                    <div className={styles.clientRow}>
-                        <span><span className={styles.label}>Cliente:</span> {factura.responsableNombre}</span>
-                        <span><span className={styles.label}>Documento:</span> {factura.responsableDoc}</span>
-                    </div>
-                    <div className={styles.clientRow}>
-                        <span><span className={styles.label}>Condición IVA:</span> {factura.tipoFactura === 'A' ? 'Responsable Inscripto' : 'Consumidor Final'}</span>
-                    </div>
-                </div>
-
-                {/* --- TABLA DE DETALLES (Lo que pediste) --- */}
-                <table className={styles.table}>
+                {/* TABLA DE DETALLES */}
+                <table className={styles.tablaDetalle}>
                     <thead>
                     <tr>
-                        {/* Columna: CANTIDAD */}
-                        <th style={{width: '60px', textAlign: 'center'}}>Cant.</th>
-
-                        {/* Columna: DESCRIPCIÓN */}
-                        <th>Descripción</th>
-
-                        {/* Columna: PRECIO UNITARIO */}
-                        <th className={styles.colRight}>Precio Unit.</th>
-
-                        {/* Columna: SUBTOTAL (Cantidad * Precio) */}
-                        <th className={styles.colRight}>Subtotal</th>
+                        <th style={{width: '40%'}}>Descripción</th>
+                        <th style={{textAlign: 'center'}}>Medida</th>
+                        <th style={{textAlign: 'center'}}>Cant.</th>
+                        <th style={{textAlign: 'right'}}>Precio Unit.</th>
+                        <th style={{textAlign: 'right'}}>Subtotal</th>
                     </tr>
                     </thead>
                     <tbody>
-                    {factura.items.map((item, index) => (
-                        <tr key={index}>
-                            {/* 1. CANTIDAD */}
-                            <td style={{textAlign: 'center'}}>{item.cantidad}</td>
+                    {factura.items.map((item, index) => {
+                        // Calculamos valores de visualización (Netos si es A)
+                        const precioUnitarioMostrar = calcularPrecioMostrar(item.precioUnitario);
+                        const subtotalMostrar = calcularPrecioMostrar(item.subtotal);
 
-                            {/* 2. DESCRIPCIÓN */}
-                            <td>
-                                {item.descripcion}
-                                {/* Si es estadía, le ponemos una etiqueta visual opcional */}
-                                {item.esEstadia && <span style={{fontSize:'0.7em', color:'#666', marginLeft:'5px'}}>(Habitación)</span>}
-                            </td>
-
-                            {/* 3. PRECIO UNITARIO */}
-                            <td className={styles.colRight}>
-                                ${(item.precioUnitario).toLocaleString('es-AR', {minimumFractionDigits: 2})}
-                            </td>
-
-                            {/* 4. SUBTOTAL */}
-                            <td className={styles.colRight} style={{fontWeight: 'bold'}}>
-                                ${(item.subtotal).toLocaleString('es-AR', {minimumFractionDigits: 2})}
-                            </td>
-                        </tr>
-                    ))}
+                        return (
+                            <tr key={index}>
+                                <td>{item.descripcion}</td>
+                                <td style={{textAlign: 'center'}}>{item.medida || (item.esEstadia ? 'NOCHE' : 'UNIDAD')}</td>
+                                <td style={{textAlign: 'center'}}>{item.cantidad}</td>
+                                <td style={{textAlign: 'right'}}>{formatCurrency(precioUnitarioMostrar)}</td>
+                                <td style={{textAlign: 'right'}}>{formatCurrency(subtotalMostrar)}</td>
+                            </tr>
+                        );
+                    })}
                     </tbody>
                 </table>
 
                 {/* TOTALES */}
-                <div className={styles.footer}>
-                    <div className={styles.totals}>
-                        <div className={`${styles.totalRow} ${styles.grandTotal}`}>
-                            <span>TOTAL:</span>
-                            <span>${factura.total.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
-                        </div>
+                <div className={styles.footerTotales}>
+
+                    {esFacturaA && (
+                        <>
+                            <div className={styles.filaTotal}>
+                                <span>Subtotal Neto:</span>
+                                <span>{formatCurrency(subtotalNeto)}</span>
+                            </div>
+                            <div className={styles.filaTotal}>
+                                <span>IVA (21%):</span>
+                                <span>{formatCurrency(montoIva)}</span>
+                            </div>
+                        </>
+                    )}
+
+                    <div className={`${styles.filaTotal} ${styles.totalFinal}`}>
+                        <span>TOTAL:</span>
+                        <span>{formatCurrency(factura.total)}</span>
                     </div>
                 </div>
 
-                <div style={{marginTop: '50px', textAlign: 'center', fontSize: '0.8rem', color: '#888'}}>
-                    <p>Original - Documento no válido como factura fiscal (Demo)</p>
+                {/* ACCIONES */}
+                <div className={styles.actions}>
+                    <button className={styles.btnVolver} onClick={() => router.push('/dashboard')}>
+                        <FaArrowLeft /> Volver al Menú
+                    </button>
+                    <button className={styles.btnImprimir} onClick={() => window.print()}>
+                        <FaPrint /> Imprimir
+                    </button>
                 </div>
-            </div>
-
-            {/* BOTONES ACCIONES */}
-            <div className={styles.actions}>
-                <button className={`${styles.btn} ${styles.btnBack}`} onClick={() => router.push('/dashboard')}>
-                    <FaArrowLeft /> Volver
-                </button>
-                <button className={`${styles.btn} ${styles.btnPrint}`} onClick={() => window.print()}>
-                    <FaPrint /> Imprimir
-                </button>
             </div>
         </div>
     );

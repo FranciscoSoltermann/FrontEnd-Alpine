@@ -36,7 +36,27 @@ export const buscarHuespedes = async (params) => {
     }
 };
 
-// --- HABITACIONES (NUEVO) ---
+export const eliminarHuesped = async (id) => {
+    // const token = localStorage.getItem('authToken');
+
+    const response = await fetch(`${API_URL}/huespedes/eliminar/${id}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            // 'Authorization': `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) {
+        // Manejamos el error del backend (ej: tiene reservas asociadas)
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'No se pudo eliminar el huésped.');
+    }
+
+    return await response.json();
+};
+
+// --- HABITACIONES ---
 export const obtenerDisponibilidad = async (fechaDesde, fechaHasta) => {
     try {
         // Usamos URLSearchParams para asegurar que los caracteres especiales se codifiquen bien
@@ -60,6 +80,27 @@ export const obtenerDisponibilidad = async (fechaDesde, fechaHasta) => {
         console.error('Error en obtenerDisponibilidad:', error.message);
         throw new Error(error.message || 'No se pudo obtener la disponibilidad.');
     }
+};
+
+export const cargarConsumo = async (datos) => {
+    // const token = localStorage.getItem('authToken');
+
+    const response = await fetch(`${API_URL}/consumos/cargar`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            // 'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(datos)
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        // El backend devuelve { "error": "mensaje" } en caso de fallo
+        throw new Error(errorData.error || 'Error al cargar el consumo');
+    }
+
+    return await response.json();
 };
 
 // --- RESPONSABLES DE PAGO (Nuevo) ---
