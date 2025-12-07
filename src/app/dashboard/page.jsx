@@ -1,5 +1,3 @@
-// src/app/dashboard/page.jsx
-
 'use client';
 
 import Link from 'next/link';
@@ -9,11 +7,14 @@ import styles from './Dashboard.module.css';
 // Importamos los íconos
 import {
     FaSearch,
-    FaPrint,
+    FaUserPlus,     // Icono para Alta Huésped (lo agregué por si lo quieres usar)
     FaUserMinus,
-    FaCalendarCheck, // Reservar
-    FaBed,           // Estado
-    FaKey            // Ocupar
+    FaUserTie,      // Responsable
+    FaCalendarCheck,
+    FaBed,
+    FaKey,
+    FaPrint,
+    FaChartLine     // Un icono genérico para admin si se necesita
 } from 'react-icons/fa';
 
 export default function DashboardPage() {
@@ -21,53 +22,80 @@ export default function DashboardPage() {
         <ProtectedRoute>
             <main className={styles.dashboardBackground}>
                 <div className={styles.dashboardContainer}>
-                    <h1 className={styles.title}>Menú Principal</h1>
+                    <h1 className={styles.title}>Panel de Control</h1>
 
-                    <div className={styles.grid}>
+                    {/* --- SECCIÓN 1: GESTIÓN DE HUÉSPEDES --- */}
+                    <section className={styles.section}>
+                        <h2 className={styles.sectionTitle}>Gestión de Huéspedes</h2>
+                        <div className={styles.grid}>
 
-                        {/* --- Botón Buscar Huésped (CU 02) --- */}
-                        <Link href="/buscar" className={styles.card}>
-                            <FaSearch size={40}/>
-                            <h2>Buscar Huésped</h2>
-                            <p>Consultar o modificar datos de un huésped.</p>
-                        </Link>
+                            {/* Buscar / Gestionar Huésped */}
+                            <Link href="/buscar" className={styles.card}>
+                                <div className={styles.iconWrapper}><FaSearch size={32}/></div>
+                                <h3>Buscar Huésped</h3>
+                                <p>Consultar, modificar o dar de alta nuevos huéspedes.</p>
+                            </Link>
 
-                        {/* --- NUEVO: Reservar Habitación (CU 04) --- */}
-                        <Link href="/reserva" className={styles.card}>
-                            <FaCalendarCheck size={40}/>
-                            <h2>Reservar</h2>
-                            <p>Crear una nueva reserva de habitación.</p>
-                        </Link>
+                            {/* Alta Responsable de Pago */}
+                            <Link href="/nuevo-responsable" className={styles.card}>
+                                <div className={styles.iconWrapper}><FaUserTie size={32}/></div>
+                                <h3>Alta Responsable</h3>
+                                <p>Registrar empresas o terceros para facturación.</p>
+                            </Link>
 
-                        {/* --- NUEVO: Ocupar Habitación (CU 15) --- */}
-                        <Link href="/ocupar" className={styles.card}>
-                            <FaKey size={40}/>
-                            <h2>Ocupar Habitación</h2>
-                            <p>Registrar el ingreso (Check-in).</p>
-                        </Link>
+                            {/* Baja Huésped */}
+                            <Link href="/baja" className={styles.card}>
+                                <div className={styles.iconWrapper}><FaUserMinus size={32}/></div>
+                                <h3>Baja Huésped</h3>
+                                <p>Eliminar registros del sistema.</p>
+                            </Link>
+                        </div>
+                    </section>
 
-                        {/* --- NUEVO: Estado de Habitaciones (CU 05) --- */}
-                        <Link href="/estado-habitaciones" className={styles.card}>
-                            <FaBed size={40}/>
-                            <h2>Estado Habitaciones</h2>
-                            <p>Ver disponibilidad y estado de limpieza.</p>
-                        </Link>
+                    {/* --- SECCIÓN 2: RESERVAS Y HABITACIONES --- */}
+                    <section className={styles.section}>
+                        <h2 className={styles.sectionTitle}>Recepción y Habitaciones</h2>
+                        <div className={styles.grid}>
 
-                        {/* --- Botón Facturar --- */}
-                        <Link href="/facturar" className={styles.card}>
-                            <FaPrint size={40}/>
-                            <h2>Facturar</h2>
-                            <p>Generar una nueva factura o ver historial.</p>
-                        </Link>
+                            {/* Reservar */}
+                            <Link href="/reserva" className={styles.card}>
+                                <div className={styles.iconWrapper}><FaCalendarCheck size={32}/></div>
+                                <h3>Nueva Reserva</h3>
+                                <p>Consultar disponibilidad y crear reservas.</p>
+                            </Link>
 
-                        {/* --- Botón Dar de Baja Huésped --- */}
-                        <Link href="/baja" className={styles.card}>
-                            <FaUserMinus size={40}/>
-                            <h2>Baja Huésped</h2>
-                            <p>Eliminar un registro de huésped.</p>
-                        </Link>
+                            {/* Ocupar (Check-in) */}
+                            <Link href="/ocupar" className={styles.card}>
+                                <div className={styles.iconWrapper}><FaKey size={32}/></div>
+                                <h3>Ocupar Habitación</h3>
+                                <p>Registrar ingreso inmediato (Check-in).</p>
+                            </Link>
 
-                    </div>
+                            {/* Estado Habitaciones */}
+                            <Link href="/estado-habitaciones" className={styles.card}>
+                                <div className={styles.iconWrapper}><FaBed size={32}/></div>
+                                <h3>Estado Habitaciones</h3>
+                                <p>Ver mapa de ocupación y limpieza.</p>
+                            </Link>
+                        </div>
+                    </section>
+
+                    {/* --- SECCIÓN 3: ADMINISTRACIÓN --- */}
+                    <section className={styles.section}>
+                        <h2 className={styles.sectionTitle}>Administración</h2>
+                        <div className={styles.grid}>
+
+                            {/* Facturación */}
+                            <Link href="/facturacion" className={styles.card}>
+                                <div className={styles.iconWrapper}><FaPrint size={32}/></div>
+                                <h3>Facturación</h3>
+                                <p>Realizar Check-out y generar comprobantes.</p>
+                            </Link>
+
+                            {/* Puedes agregar más aquí, como "Reportes", "Caja", etc. */}
+                        </div>
+                    </section>
+
                 </div>
             </main>
         </ProtectedRoute>
