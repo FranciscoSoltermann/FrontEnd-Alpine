@@ -25,6 +25,8 @@ export default function DetalleFacturaPage() {
     const TASA_IVA = 0.21;
 
     const formatCurrency = (valor) => {
+        // Validación para prevenir NaN en caso de que el valor sea null, undefined o no numérico
+        if (typeof valor !== 'number' || isNaN(valor)) return '$ 0.00';
         return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(valor);
     };
 
@@ -32,8 +34,9 @@ export default function DetalleFacturaPage() {
         return esFacturaA ? (precioFinal / (1 + TASA_IVA)) : precioFinal;
     };
 
-    const subtotalNeto = esFacturaA ? (factura.total / (1 + TASA_IVA)) : factura.total;
-    const montoIva = esFacturaA ? (factura.total - subtotalNeto) : 0;
+    // Usando factura.montoTotal (corregido)
+    const subtotalNeto = esFacturaA ? (factura.montoTotal / (1 + TASA_IVA)) : factura.montoTotal;
+    const montoIva = esFacturaA ? (factura.montoTotal - subtotalNeto) : 0;
 
     return (
         <div className={styles.container}>
@@ -72,14 +75,19 @@ export default function DetalleFacturaPage() {
                     </tr>
                     </thead>
                     <tbody>
-                    {factura.items.map((item, index) => {
+                    {/* CONFIRMADO: Usar factura.detalles, que viene de la entidad Factura.java */}
+                    {factura.detalles?.map((item, index) => {
+                        // Las propiedades de item (descripcion, precioUnitario, subtotal)
+                        // coinciden con los nombres de la entidad FacturaDetalle.java
+
                         const precioUnitarioMostrar = calcularPrecioMostrar(item.precioUnitario);
                         const subtotalMostrar = calcularPrecioMostrar(item.subtotal);
 
                         return (
                             <tr key={index}>
                                 <td>{item.descripcion}</td>
-                                <td style={{textAlign: 'center'}}>{item.medida || (item.esEstadia ? 'NOCHE' : 'UNIDAD')}</td>
+                                {/* NOTA: Usamos item.medida si existe, sino 'UNIDAD'. Se asume que item.medida está disponible. */}
+                                <td style={{textAlign: 'center'}}>{item.medida || 'UNIDAD'}</td>
                                 <td style={{textAlign: 'center'}}>{item.cantidad}</td>
                                 <td style={{textAlign: 'right'}}>{formatCurrency(precioUnitarioMostrar)}</td>
                                 <td style={{textAlign: 'right'}}>{formatCurrency(subtotalMostrar)}</td>
@@ -107,7 +115,8 @@ export default function DetalleFacturaPage() {
 
                     <div className={`${styles.filaTotal} ${styles.totalFinal}`}>
                         <span>TOTAL:</span>
-                        <span>{formatCurrency(factura.total)}</span>
+                        {/* CONFIRMADO: Usar factura.montoTotal */}
+                        <span>{formatCurrency(factura.montoTotal)}</span>
                     </div>
                 </div>
 

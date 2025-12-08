@@ -162,43 +162,40 @@ const FacturacionPage = () => {
     const calcularTotal = () => itemsSeleccionados.reduce((acc, item) => acc + item.subtotal, 0);
 
     const handleConfirmarFactura = async () => {
-        if (!responsableSeleccionado) {
-            setErrorModal({ show: true, title: "Falta Responsable", msg: "Debe seleccionar un ocupante o validar los datos de la empresa." });
-            return;
-        }
-
-        const datosParaVisualizar = {
-            id: 9999,
-            responsableNombre: responsableSeleccionado.nombreCompleto,
-            responsableDoc: responsableSeleccionado.documento,
-            tipoFactura: tipoFactura,
-            items: itemsSeleccionados,
-            total: calcularTotal()
-        };
-
+        setLoading(true);
         try {
-            const solicitud = {
-                idEstadia: resumen.idEstadia,
-                idResponsablePagoSeleccionado: responsableSeleccionado.id,
-                cuitTercero: esTercero ? datosTercero.cuit.trim() : null,
-                razonSocialTercero: esTercero ? datosTercero.razonSocial.trim() : null,
-                tipoFactura: tipoFactura,
-                itemsAFacturar: itemsSeleccionados,
-                horaSalida: busqueda.horaSalida
-            };
 
-            try {
-                const respuestaBack = await crearFactura(solicitud);
-                if(respuestaBack && respuestaBack.id) datosParaVisualizar.id = respuestaBack.id;
-            } catch (backendError) {
-                console.warn("Backend no disponible, continuando en modo DEMO VISUAL");
+            if (!resumen) throw new Error("No hay resumen de facturación disponible.");
+
+            if (esTercero && (!datosTercero.cuit || !datosTercero.razonSocial)) {
+                throw new Error("Debe completar CUIT y Razón Social para facturar a un tercero.");
             }
 
-            localStorage.setItem('ultimaFactura', JSON.stringify(datosParaVisualizar));
+            if (!esTercero && !responsableSeleccionado) {
+                throw new Error("Debe seleccionar un responsable de pago.");
+            }
+
+            const solicitud = {
+                idEstadia: resumen.idEstadia,
+                tipoFactura: tipoFactura,
+                horaSalida: busqueda.horaSalida,
+                itemsAFacturar: itemsSeleccionados,
+
+                cuitTercero: esTercero ? datosTercero.cuit : null,
+                razonSocialTercero: esTercero ? datosTercero.razonSocial : null,
+                idResponsablePagoSeleccionado: !esTercero ? responsableSeleccionado.id : null
+            };
+
+            const facturaCreada = await crearFactura(solicitud);
+
+            localStorage.setItem('ultimaFactura', JSON.stringify(facturaCreada));
             router.push('/facturacion/detalle');
 
         } catch (err) {
-            setErrorModal({ show: true, title: "Error al Facturar", msg: err.message });
+            console.error(err);
+            setErrorModal({ show: true, title: 'Error al Facturar', msg: err.message });
+        } finally {
+            setLoading(false);
         }
     };
 

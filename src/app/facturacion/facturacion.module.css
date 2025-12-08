@@ -6,7 +6,7 @@
     justify-content: center;
     align-items: flex-start;
     min-height: 100vh;
-    background-color: #f3f4f6;
+    background-color: #e6f5e6;
     padding: 40px 20px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
@@ -81,7 +81,7 @@
 .buttonPrimary {
     width: 100%;
     padding: 15px;
-    background-color: #2563eb;
+    background-color: #4dd0e1;
     color: white;
     border: none;
     border-radius: 8px;

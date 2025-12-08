@@ -58,7 +58,7 @@
 
 /* Botón de Aceptar (Verde) */
 .confirmButton {
-  background: #48bb78; /* Verde */
+    background-color: #90ee90; /* Verde */
   color: white;
   border: none;
   padding: 10px 20px;

@@ -1,22 +1,24 @@
-/* src/app/dashboard/Dashboard.module.css */
-
 .dashboardBackground {
-    background-color: #e6f5e6; /* Un gris muy suave es más moderno que el verde */
+    background-color: #e6f5e6;
     min-height: calc(100vh - 60px);
-    padding: 3rem 2rem;
+    padding: 3rem 1rem; /* Reduje un poco el padding lateral para móviles */
+    display: flex;       /* Agregado: Ayuda a centrar el contenido vertical/horizontal si sobra espacio */
+    justify-content: center;
 }
 
 .dashboardContainer {
+    width: 100%;        /* Agregado: Asegura que tome el ancho disponible */
     max-width: 1200px;
-    margin: 0 auto;
+    margin: 0 auto;     /* Esto centra el contenedor principal horizontalmente */
+    padding: 0 1rem;    /* Un pequeño respiro interno */
 }
 
 .title {
     font-size: 2.2rem;
     font-weight: 800;
-    color: #1f2937; /* Gris oscuro */
-    margin-bottom: 2rem;
-    text-align: center;
+    color: #1f2937;
+    margin-bottom: 3rem; /* Más espacio debajo del título principal */
+    text-align: center;  /* Centrado */
     text-transform: uppercase;
     letter-spacing: 1px;
 }
@@ -24,28 +26,39 @@
 /* --- ESTILOS DE SECCIÓN --- */
 .section {
     margin-bottom: 3rem;
+    /* Agregado: Para asegurar que el contenido de la sección se centre */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .sectionTitle {
     font-size: 1.4rem;
-    color: #4b5563; /* Gris medio */
+    color: #4b5563;
     margin-bottom: 1.5rem;
     border-bottom: 2px solid #e5e7eb;
     padding-bottom: 0.5rem;
     font-weight: 600;
+    width: 100%;       /* Ocupa el ancho */
+    text-align: center; /* SOLUCIÓN: Centra el texto "Gestión de Huéspedes" */
+    max-width: 1000px; /* Opcional: para que la línea no sea tan larga */
 }
 
 /* --- GRID Y TARJETAS --- */
 .grid {
     display: grid;
-    /* Responsive: Se adapta automáticamente */
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.5rem;
+    /* CAMBIO 1: Reduje el minmax de 280px a 220px para que las tarjetas sean más angostas */
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;             /* Reduje un poco el espacio entre ellas */
+    justify-content: center; /* Se mantiene centrado */
+    width: 100%;
+    max-width: 900px;        /* Reduje el ancho total para que se agrupen mejor en el centro */
 }
 
 .card {
     background: #ffffff;
-    padding: 2rem;
+    /* CAMBIO 2: Reduje el padding de 2rem a 1.5rem */
+    padding: 1.5rem;
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     text-decoration: none;
@@ -53,38 +66,50 @@
     transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    text-align: center;
     border: 1px solid #f0f0f0;
+    height: 100%;
 }
 
 .card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-    border-color: #3b82f6; /* Borde azul al pasar el mouse */
+    transform: translateY(-3px); /* Movimiento más sutil */
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1);
+    border-color: #3b82f6;
 }
 
-/* Contenedor del ícono para darle color de fondo suave */
 .iconWrapper {
-    background-color: #eff6ff; /* Azul muy claro */
-    color: #2563eb; /* Azul fuerte */
-    padding: 12px;
-    border-radius: 10px;
-    margin-bottom: 1rem;
+    background-color: #eff6ff;
+    color: #2563eb;
+    padding: 10px;      /* Menos relleno */
+    border-radius: 50%;
+    /* CAMBIO 3: Reduje el tamaño del círculo del ícono de 60px a 45px */
+    width: 45px;
+    height: 45px;
+    margin-bottom: 0.8rem;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
+/* Ajuste de tamaño de los íconos SVG dentro del wrapper (si usas lucide-react o similar) */
+.iconWrapper svg {
+    width: 20px;
+    height: 20px;
+}
+
 .card h3 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.25rem;
+    margin: 0 0 0.4rem 0;
+    /* CAMBIO 4: Letra del título más chica (antes 1.25rem) */
+    font-size: 1rem;
     font-weight: 700;
     color: #111827;
 }
 
 .card p {
-    font-size: 0.95rem;
+    /* CAMBIO 5: Descripción más pequeña */
+    font-size: 0.85rem;
     color: #6b7280;
-    line-height: 1.5;
+    line-height: 1.4;
     margin: 0;
 }

@@ -23,11 +23,10 @@ export const buscarHuespedes = async (params) => {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                // 'Authorization': `Bearer ${token}`
             }
         });
 
-        await manejarErrores(response); // Reutilizamos lógica de error
+        await manejarErrores(response);
         return await response.json();
 
     } catch (error) {
@@ -37,18 +36,15 @@ export const buscarHuespedes = async (params) => {
 };
 
 export const eliminarHuesped = async (id) => {
-    // const token = localStorage.getItem('authToken');
 
     const response = await fetch(`${API_URL}/huespedes/eliminar/${id}`, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
-            // 'Authorization': `Bearer ${token}`
         }
     });
 
     if (!response.ok) {
-        // Manejamos el error del backend (ej: tiene reservas asociadas)
         const errorData = await response.json();
         throw new Error(errorData.error || 'No se pudo eliminar el huésped.');
     }
@@ -59,13 +55,11 @@ export const eliminarHuesped = async (id) => {
 // --- HABITACIONES ---
 export const obtenerDisponibilidad = async (fechaDesde, fechaHasta) => {
     try {
-        // Usamos URLSearchParams para asegurar que los caracteres especiales se codifiquen bien
         const query = new URLSearchParams({
             desde: fechaDesde,
             hasta: fechaHasta
         }).toString();
 
-        // La URL final será algo como: http://localhost:8080/api/habitaciones/estado?desde=2023-11-01&hasta=2023-11-05
         const response = await fetch(`${API_URL}/habitaciones/estado?${query}`, {
             method: 'GET',
             headers: {
@@ -83,20 +77,17 @@ export const obtenerDisponibilidad = async (fechaDesde, fechaHasta) => {
 };
 
 export const cargarConsumo = async (datos) => {
-    // const token = localStorage.getItem('authToken');
 
     const response = await fetch(`${API_URL}/consumos/cargar`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            // 'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(datos)
     });
 
     if (!response.ok) {
         const errorData = await response.json();
-        // El backend devuelve { "error": "mensaje" } en caso de fallo
         throw new Error(errorData.error || 'Error al cargar el consumo');
     }
 
@@ -105,13 +96,11 @@ export const cargarConsumo = async (datos) => {
 
 // --- RESPONSABLES DE PAGO ---
 export const crearResponsablePago = async (datos) => {
-    // const token = localStorage.getItem('authToken'); // Descomentar si usas seguridad
 
     const response = await fetch(`${API_URL}/responsables/crear-juridica`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            // 'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(datos)
     });
@@ -125,17 +114,15 @@ export const crearResponsablePago = async (datos) => {
 };
 
 export const buscarResponsablePorCuit = async (cuit) => {
-    // const token = localStorage.getItem('authToken');
     const response = await fetch(`${API_URL}/responsables/buscar-cuit?cuit=${cuit}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
-            // 'Authorization': `Bearer ${token}`
         }
     });
 
     if (response.status === 404) {
-        return null; // No existe
+        return null;
     }
 
     if (!response.ok) {
@@ -190,7 +177,7 @@ export const crearFactura = async (solicitudDTO) => {
 export const buscarFacturasPendientes = async (numeroHabitacion) => {
     const res = await fetch(`${API_URL}/pagos/pendientes?habitacion=${numeroHabitacion}`);
     if (!res.ok) {
-        if (res.status === 404) return []; // Manejo elegante de "no encontrado"
+        if (res.status === 404) return [];
         throw new Error('Error al buscar facturas');
     }
     return await res.json();
@@ -210,7 +197,6 @@ export const registrarPago = async (pagoData) => {
 };
 
 // --- UTILS: MANEJO DE ERRORES CENTRALIZADO ---
-// Extraje tu lógica de error a una función auxiliar para no repetirla
 async function manejarErrores(response) {
     if (!response.ok) {
         let errorMsg = `Error ${response.status}: ${response.statusText}`;

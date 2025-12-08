@@ -58,7 +58,7 @@
 .formBusqueda .btnBuscar {
     grid-column: 2 / 3;
     justify-self: end;
-    background-color: #007bff;
+    background-color: #4dd0e1;
     color: white;
     padding: 0.6rem 1.5rem;
     border: none;
@@ -219,6 +219,13 @@
 }
 
 .btnCrear {
+    display: flex;
+    justify-content: center; /* Centrado Horizontal */
+    align-items: center;     /* Centrado Vertical */
+
+    /* Asegúrate de que no tenga paddings asimétricos */
+    padding: 12px 24px;      /* Ejemplo de relleno parejo */
+    text-align: center;
     background-color: #ffc107;
     color: #212529;
 }

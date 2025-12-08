@@ -187,7 +187,7 @@ export default function Formulario() {
       onConfirm: () => {
         setInfoModalData(null);
         setFormData(initialState); 
-        router.push('/buscar'); 
+        router.push('/huesped/buscar');
       }
     });
   };

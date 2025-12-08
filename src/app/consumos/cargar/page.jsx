@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { cargarConsumo } from '@/services/api';
-import styles from '../../components/forms/Formulario.module.css';
-import { FaArrowLeft, FaSave, FaBroom, FaCoffee } from 'react-icons/fa';
+import styles from '../../components/forms/Formulario.module.css'; // Asegúrate de que este archivo tenga la clase .pageBackground que creamos antes
+import { FaArrowLeft, FaSave, FaCoffee } from 'react-icons/fa';
 
 import SuccessModal from '../../components/ui/modals/SuccessModal';
 import ErrorModal from '../../components/ui/modals/ErrorModal';
@@ -20,7 +20,6 @@ export default function CargarConsumoPage() {
     });
 
     const [loading, setLoading] = useState(false);
-
     const [showSuccess, setShowSuccess] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
 
@@ -42,9 +41,7 @@ export default function CargarConsumoPage() {
 
         try {
             await cargarConsumo(form);
-
             setShowSuccess(true);
-
         } catch (err) {
             setErrorMsg(err.message);
         } finally {
@@ -67,9 +64,14 @@ export default function CargarConsumoPage() {
     );
 
     return (
-        <div style={{ padding: '40px', background: '#f3f4f6', minHeight: '100vh', display: 'flex', justifyContent: 'center' }}>
+        /* CAMBIO PRINCIPAL AQUÍ:
+           1. Quitamos el style={{ background: '#f3f4f6'... }}
+           2. Agregamos className={styles.pageBackground}
+        */
+        <div className={styles.pageBackground}>
 
-            <div className={styles.formContainer} style={{ maxWidth: '600px', width: '100%', height: 'fit-content' }}>
+            {/* Mantenemos el maxWidth: 600px para que este formulario no quede tan ancho */}
+            <div className={styles.formContainer} style={{ maxWidth: '600px' }}>
 
                 <h1 className={styles.title} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'10px' }}>
                     <FaCoffee /> CARGAR CONSUMO
@@ -104,7 +106,7 @@ export default function CargarConsumoPage() {
                         />
                     </div>
 
-                    {/* 3. Precio y Cantidad (En una misma fila) */}
+                    {/* 3. Precio y Cantidad */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                         <div className={styles.fieldWrapper}>
                             <Label>Precio Unitario ($)</Label>
@@ -157,7 +159,6 @@ export default function CargarConsumoPage() {
             </div>
 
             {/* --- MODALES --- */}
-
             {showSuccess && (
                 <SuccessModal
                     titulo="Consumo Guardado"

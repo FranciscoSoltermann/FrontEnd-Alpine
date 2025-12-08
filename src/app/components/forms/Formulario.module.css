@@ -32,6 +32,7 @@
 .gridContainer {
   display: grid;
   /* 4 columnas en escritorio */
+
   grid-template-columns: repeat(4, 1fr); 
   gap: 1.5rem; /* Espacio entre campos */
 }
@@ -209,4 +210,26 @@
   color: #d32f2f;
   margin: 0.5rem 0;
   font-size: 0.9rem;
+}
+/* --- FONDO DE PANTALLA COMPLETA --- */
+.pageBackground {
+    background-color: #e6f5e6; /* Color verde suave del dashboard */
+    min-height: 100vh;         /* Ocupa al menos el 100% de la altura de la ventana */
+    width: 100%;
+    display: flex;             /* Usamos flex para centrar el formulario */
+    justify-content: center;   /* Centrado horizontal */
+    align-items: flex-start;   /* Alineado arriba (no al centro vertical para que no se corte en móviles) */
+    padding-top: 40px;         /* Espacio arriba */
+    padding-bottom: 40px;      /* Espacio abajo */
+}
+
+/* Modificación pequeña a tu .formContainer existente */
+.formContainer {
+    background-color: #ffffff;
+    max-width: 900px;
+    width: 100%;               /* Asegura que no se achique demasiado */
+    /* margin: 2rem auto;  <-- ELIMINA O COMENTA ESTA LÍNEA, ya no es necesaria con el flex del padre */
+    padding: 2.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
