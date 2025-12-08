@@ -1,3 +1,4 @@
+// Mantenemos tu constante original
 const API_URL = 'http://localhost:8080/api';
 
 // --- USUARIOS ---
@@ -36,7 +37,6 @@ export const buscarHuespedes = async (params) => {
 };
 
 export const eliminarHuesped = async (id) => {
-
     const response = await fetch(`${API_URL}/huespedes/eliminar/${id}`, {
         method: 'DELETE',
         headers: {
@@ -77,7 +77,6 @@ export const obtenerDisponibilidad = async (fechaDesde, fechaHasta) => {
 };
 
 export const cargarConsumo = async (datos) => {
-
     const response = await fetch(`${API_URL}/consumos/cargar`, {
         method: 'POST',
         headers: {
@@ -96,7 +95,6 @@ export const cargarConsumo = async (datos) => {
 
 // --- RESPONSABLES DE PAGO ---
 export const crearResponsablePago = async (datos) => {
-
     const response = await fetch(`${API_URL}/responsables/crear-juridica`, {
         method: 'POST',
         headers: {
@@ -134,7 +132,6 @@ export const buscarResponsablePorCuit = async (cuit) => {
 
 // --- FACTURACIÓN ---
 export const previsualizarFactura = async (habitacion, horaSalida) => {
-
     try {
         const query = new URLSearchParams({ habitacion, horaSalida }).toString();
 
@@ -194,6 +191,34 @@ export const registrarPago = async (pagoData) => {
         throw new Error(err.error || 'Error al registrar pago');
     }
     return await res.json();
+};
+
+// --- NOTA DE CRÉDITO (CORREGIDO) ---
+export const buscarFacturasPorCliente = async (documento) => {
+    // CAMBIO: Usamos API_URL en lugar de API_BASE_URL
+    const response = await fetch(`${API_URL}/facturas/buscar-por-cliente?documento=${documento}`);
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.mensaje || errorData.error || 'Error al buscar facturas');
+    }
+    return await response.json();
+};
+
+export const generarNotaCredito = async (listaIdsFacturas) => {
+    // CAMBIO: Usamos API_URL en lugar de API_BASE_URL
+    const response = await fetch(`${API_URL}/facturas/nota-credito`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ idsFacturas: listaIdsFacturas }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al generar la nota de crédito');
+    }
+    return await response.json();
 };
 
 // --- UTILS: MANEJO DE ERRORES CENTRALIZADO ---

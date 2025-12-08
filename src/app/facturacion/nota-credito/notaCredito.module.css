@@ -1,0 +1,169 @@
+.container {
+    padding: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+    background-color: #f8fafc;
+    min-height: 100vh;
+}
+
+.card {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.title {
+    color: #1e293b;
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* --- Etapa 1: Buscador --- */
+.searchBox {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.searchInput {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+/* --- Etapa 2: Tabla de Selección --- */
+.tableContainer {
+    overflow-x: auto;
+    margin-top: 1.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.table th, .table td {
+    padding: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.table th {
+    background-color: #f1f5f9;
+    color: #475569;
+    font-weight: 600;
+}
+
+.checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.summaryBox {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: #f0f9ff;
+    border-radius: 8px;
+    border: 1px solid #bae6fd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.totalLabel {
+    font-size: 1.1rem;
+    color: #0369a1;
+}
+
+.totalValue {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #0ea5e9;
+}
+
+/* --- Etapa 3: Éxito --- */
+.successContainer {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.successIcon {
+    color: #22c55e;
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.ncDetails {
+    background: #f1f5f9;
+    padding: 1.5rem;
+    border-radius: 8px;
+    text-align: left;
+    display: inline-block;
+    margin: 2rem 0;
+}
+
+.ncDetails p {
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
+}
+
+/* --- Botones Generales --- */
+.buttonPrimary, .buttonSecondary, .buttonDanger {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.buttonPrimary {
+    background-color: #2563eb;
+    color: white;
+}
+.buttonPrimary:hover:not(:disabled) { background-color: #1d4ed8; }
+
+.buttonSecondary {
+    background-color: #e2e8f0;
+    color: #475569;
+}
+.buttonSecondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+.buttonDanger {
+    background-color: #dc2626;
+    color: white;
+}
+.buttonDanger:hover:not(:disabled) { background-color: #b91c1c; }
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.errorMsg {
+    color: #dc2626;
+    background-color: #fef2f2;
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+}
