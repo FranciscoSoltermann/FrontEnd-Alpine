@@ -1,186 +1,401 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { cargarConsumo } from '@/services/api';
-import styles from '../../components/forms/Formulario.module.css';
-import { FaArrowLeft, FaSave, FaCoffee } from 'react-icons/fa';
-
+import { buscarFacturasPendientes, registrarPago } from '../../services/api';
+import styles from '../components/forms/Formulario.module.css';
+import { FaSearch, FaMoneyBillWave, FaCheck, FaArrowLeft } from 'react-icons/fa';
 import SuccessModal from '../components/ui/modals/SuccessModal';
 import ErrorModal from '../components/ui/modals/ErrorModal';
 
-export default function CargarConsumoPage() {
+export default function IngresarPagoPage() {
     const router = useRouter();
 
-    const [form, setForm] = useState({
-        numeroHabitacion: '',
-        descripcion: '',
-        precioUnitario: '',
-        cantidad: 1
+    const [habitacion, setHabitacion] = useState('');
+    const [facturas, setFacturas] = useState([]);
+    const [facturaSeleccionada, setFacturaSeleccionada] = useState(null);
+
+    const [medioPago, setMedioPago] = useState('EFECTIVO');
+    const [monto, setMonto] = useState('');
+
+    const [datosExtra, setDatosExtra] = useState({
+        numeroTarjeta: '',
+        nombreTarjeta: 'VISA',
+        nroCheque: '',
+        banco: '',
+        plaza: '',
+        fechaCobro: ''
     });
 
+    const montoRef = useRef(null);
+    const tarjetaRef = useRef(null);
+    const nroChequeRef = useRef(null);
+    const bancoRef = useRef(null);
+    const plazaRef = useRef(null);
+    const fechaChequeRef = useRef(null);
+
     const [loading, setLoading] = useState(false);
-    const [showSuccess, setShowSuccess] = useState(false);
-    const [errorMsg, setErrorMsg] = useState('');
+    const [modal, setModal] = useState({ type: null, msg: '' });
+
+    const getNombreResponsable = (responsable) => {
+        if (!responsable) return 'Desconocido';
+        if (responsable.razonSocial) return responsable.razonSocial;
+        if (responsable.nombre || responsable.apellido) {
+            return `${responsable.apellido || ''} ${responsable.nombre || ''}`.trim();
+        }
+        return 'Sin Nombre Registrado';
+    };
 
     const handleKeyDown = (e) => {
-        if (["e", "E", "+", "-", ".", ","].includes(e.key)) {
+        if (["e", "E", "+", "-"].includes(e.key)) {
             e.preventDefault();
         }
     };
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setForm(prev => ({ ...prev, [name]: value }));
-    };
+    const validarCampos = () => {
+        let errores = [];
+        let primerInputFaltante = null;
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setErrorMsg('');
-
-        if (!form.numeroHabitacion || !form.descripcion || !form.precioUnitario) {
-            setErrorMsg("Por favor complete todos los campos obligatorios.");
-            setLoading(false);
-            return;
+        // 1. Validar Monto
+        if (!monto || parseFloat(monto) <= 0) {
+            errores.push("El monto a abonar es obligatorio.");
+            if (!primerInputFaltante) primerInputFaltante = montoRef;
         }
 
+        // 2. Validar Tarjetas
+        if (medioPago.includes('TARJETA')) {
+            if (!datosExtra.numeroTarjeta || datosExtra.numeroTarjeta.length < 4) {
+                errores.push("Debe ingresar los últimos 4 números de la tarjeta.");
+                if (!primerInputFaltante) primerInputFaltante = tarjetaRef;
+            }
+        }
+
+        // 3. Validar Cheque
+        if (medioPago === 'CHEQUE') {
+            if (!datosExtra.nroCheque) {
+                errores.push("Falta el Número de Cheque.");
+                if (!primerInputFaltante) primerInputFaltante = nroChequeRef;
+            }
+            if (!datosExtra.banco) {
+                errores.push("Falta el nombre del Banco.");
+                if (!primerInputFaltante) primerInputFaltante = bancoRef;
+            }
+            if (!datosExtra.plaza) {
+                errores.push("Falta la Plaza del cheque.");
+                if (!primerInputFaltante) primerInputFaltante = plazaRef;
+            }
+            if (!datosExtra.fechaCobro) {
+                errores.push("Falta la Fecha de Cobro del cheque.");
+                if (!primerInputFaltante) primerInputFaltante = fechaChequeRef;
+            }
+        }
+
+        if (errores.length > 0) {
+            setModal({ type: 'error', msg: errores.join('\n') });
+
+            if (primerInputFaltante && primerInputFaltante.current) {
+                primerInputFaltante.current.focus();
+                primerInputFaltante.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return false;
+        }
+
+        return true;
+    };
+
+    // --- PASO 1: BUSCAR ---
+    const handleBuscar = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setFacturas([]);
+        setFacturaSeleccionada(null);
         try {
-            await cargarConsumo(form);
-            setShowSuccess(true);
+            const data = await buscarFacturasPendientes(habitacion);
+            if (data.length === 0) {
+                setModal({ type: 'error', msg: 'No hay facturas pendientes para esa habitación.' });
+            } else {
+                setFacturas(data);
+            }
         } catch (err) {
-            setErrorMsg(err.message);
+            setModal({ type: 'error', msg: err.message });
         } finally {
             setLoading(false);
         }
     };
 
-    const handleSuccessClose = () => {
-        setShowSuccess(false);
-        setForm(prev => ({
-            ...prev,
-            descripcion: '',
-            precioUnitario: '',
-            cantidad: 1
-        }));
+    // --- PASO 2: SELECCIONAR FACTURA ---
+    const seleccionarFactura = (factura) => {
+        setFacturaSeleccionada(factura);
+
+        const saldoReal = factura.saldoPendiente !== undefined ? factura.saldoPendiente : factura.montoTotal;
+        setMonto(saldoReal);
+
+        setDatosExtra({
+            numeroTarjeta: '', nombreTarjeta: 'VISA',
+            nroCheque: '', banco: '', plaza: '', fechaCobro: ''
+        });
     };
 
-    const Label = ({ children }) => (
-        <label className={styles.label}>{children} <span className={styles.asterisk}>*</span></label>
-    );
+    // --- PASO 3: REGISTRAR PAGO ---
+    const handlePagar = async (e) => {
+        e.preventDefault();
+
+        if (!validarCampos()) return;
+
+        setLoading(true);
+        try {
+            const dto = {
+                idFactura: facturaSeleccionada.id,
+                tipoMedioPago: medioPago,
+                monto: parseFloat(monto),
+                moneda: 'PESOS',
+                ...datosExtra
+            };
+
+            const facturaActualizada = await registrarPago(dto);
+
+            if (facturaActualizada.estado === 'PAGADA') {
+                const totalOriginal = facturaSeleccionada.montoTotal;
+                // Calculamos el vuelto sobre lo que el usuario ingresó vs lo que faltaba
+                // (Para simplificar visualmente usamos el monto total si no tenemos el dato preciso del saldo anterior en este scope)
+                setModal({ type: 'success', msg: `¡Factura Saldada Completamente!` });
+                setFacturaSeleccionada(null);
+                setFacturas(prev => prev.filter(f => f.id !== facturaActualizada.id));
+            } else {
+                setModal({ type: 'success', msg: 'Pago parcial registrado. La factura sigue pendiente por el saldo restante.' });
+                setFacturaSeleccionada(null);
+
+                // Opción: Quitarla de la lista para obligar a volver a buscar y ver el saldo actualizado
+                setFacturas(prev => prev.filter(f => f.id !== facturaActualizada.id));
+            }
+        } catch (err) {
+            setModal({ type: 'error', msg: err.message });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Helper para mostrar el monto correcto en la interfaz
+    const getMontoVisible = (f) => {
+        return f.saldoPendiente !== undefined ? f.saldoPendiente : f.montoTotal;
+    };
 
     return (
-        <div style={{ padding: '40px', background: '#f3f4f6', minHeight: '100vh', display: 'flex', justifyContent: 'center' }}>
+        <div className={styles.formContainer} style={{ maxWidth: '800px' }}>
+            <h1 className={styles.title}>INGRESAR PAGO</h1>
 
-            <div className={styles.formContainer} style={{ maxWidth: '600px', width: '100%', height: 'fit-content' }}>
-
-                <h1 className={styles.title} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'10px' }}>
-                    <FaCoffee /> CARGAR CONSUMO
-                </h1>
-
-                <form onSubmit={handleSubmit}>
-
-                    {/* 1. Habitación (CORREGIDO) */}
-                    <div className={styles.fieldWrapper}>
-                        <Label>Nro. de Habitación</Label>
-                        <input
-                            type="number" // <--- CAMBIO 1: Tipo numérico
-                            className={styles.inputField}
-                            name="numeroHabitacion"
-                            value={form.numeroHabitacion}
-                            onChange={handleChange}
-                            onKeyDown={handleKeyDown} // <--- CAMBIO 2: Bloqueo de teclas
-                            placeholder="Ej: 104"
-                            autoFocus
-                            required
-                            min="1"
-                        />
-                    </div>
-
-                    {/* 2. Descripción */}
-                    <div className={styles.fieldWrapper}>
-                        <Label>Producto / Servicio</Label>
-                        <input
-                            className={styles.inputField}
-                            name="descripcion"
-                            value={form.descripcion}
-                            onChange={handleChange}
-                            placeholder="Ej: Coca Cola, Lavandería..."
-                            required
-                        />
-                    </div>
-
-                    {/* 3. Precio y Cantidad */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                        <div className={styles.fieldWrapper}>
-                            <Label>Precio Unitario ($)</Label>
+            {/* SECCIÓN BÚSQUEDA */}
+            {!facturaSeleccionada && (
+                <div>
+                    <form onSubmit={handleBuscar} style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                        <div className={styles.fieldWrapper} style={{ flex: 1 }}>
+                            <label className={styles.label}>Nro. Habitación</label>
                             <input
                                 type="number"
                                 className={styles.inputField}
-                                name="precioUnitario"
-                                value={form.precioUnitario}
-                                onChange={handleChange}
-                                onKeyDown={handleKeyDown} // También útil para el precio
-                                placeholder="0.00"
-                                min="0"
-                                step="0.01"
-                                required
-                            />
-                        </div>
-                        <div className={styles.fieldWrapper}>
-                            <Label>Cantidad</Label>
-                            <input
-                                type="number"
-                                className={styles.inputField}
-                                name="cantidad"
-                                value={form.cantidad}
-                                onChange={handleChange}
+                                value={habitacion}
+                                onChange={e => setHabitacion(e.target.value)}
                                 onKeyDown={handleKeyDown}
+                                placeholder="Ej: 104"
+                                autoFocus
                                 min="1"
-                                required
                             />
+                        </div>
+                        <button type="submit" className={`${styles.button} ${styles.submitButton}`} disabled={loading} style={{ width: 'auto', marginTop: '24px' }}>
+                            <FaSearch /> BUSCAR
+                        </button>
+                    </form>
+
+                    {/* LISTA DE RESULTADOS */}
+                    {facturas.length > 0 && (
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+                                <thead>
+                                <tr style={{ background: '#f3f4f6', textAlign: 'left', borderBottom: '2px solid #ddd' }}>
+                                    <th style={{ padding: '12px' }}>N° Factura</th>
+                                    <th>Responsable</th>
+                                    <th>Saldo a Pagar</th>
+                                    <th style={{ textAlign: 'center' }}>Acción</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {facturas.map(f => (
+                                    <tr key={f.id} style={{ borderBottom: '1px solid #eee' }}>
+                                        <td style={{ padding: '12px' }}>{String(f.id).padStart(8, '0')}</td>
+                                        <td style={{ fontWeight: '500' }}>{getNombreResponsable(f.responsableDePago)}</td>
+
+                                        {/* CORRECCIÓN 2: Mostrar Saldo Pendiente en la tabla */}
+                                        <td style={{ fontWeight: 'bold', color: '#dc2626' }}>
+                                            ${getMontoVisible(f).toLocaleString()}
+                                        </td>
+
+                                        <td style={{ textAlign: 'center' }}>
+                                            <button
+                                                type="button"
+                                                onClick={() => seleccionarFactura(f)}
+                                                className={`${styles.button} ${styles.submitButton}`}
+                                                style={{ margin: 0, padding: '8px 16px', width: 'auto', fontSize: '0.9rem' }}
+                                            >
+                                                <FaMoneyBillWave /> PAGAR
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* SECCIÓN CAJA DE PAGO */}
+            {facturaSeleccionada && (
+                <div style={{ background: '#f9fafb', padding: '20px', borderRadius: '8px', border: '1px solid #e5e7eb', animation: 'fadeIn 0.3s ease' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
+                        <div>
+                            <h3 style={{ margin: 0, color: '#1f2937' }}>Factura N° {String(facturaSeleccionada.id).padStart(8, '0')}</h3>
+                            <p style={{ margin: '5px 0', color: '#6b7280', fontSize: '0.9rem' }}>
+                                Titular: <strong>{getNombreResponsable(facturaSeleccionada.responsableDePago)}</strong>
+                            </p>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                            <span style={{ display: 'block', fontSize: '0.85rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total a Pagar</span>
+                            {/* CORRECCIÓN 3: Mostrar el saldo también en el encabezado de pago */}
+                            <span style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#dc2626' }}>
+                                ${getMontoVisible(facturaSeleccionada).toLocaleString()}
+                            </span>
                         </div>
                     </div>
 
-                    {/* Botones */}
-                    <div className={styles.buttonContainer} style={{ marginTop: '30px' }}>
-                        <button
-                            type="button"
-                            className={`${styles.button} ${styles.cancelButton}`}
-                            onClick={() => router.push('/dashboard')}
-                        >
-                            <FaArrowLeft style={{ marginRight: '5px' }}/> VOLVER
-                        </button>
+                    <form onSubmit={handlePagar}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                            {/* Medio de Pago */}
+                            <div className={styles.fieldWrapper}>
+                                <label className={styles.label}>Medio de Pago</label>
+                                <select
+                                    className={styles.inputField}
+                                    value={medioPago}
+                                    onChange={e => setMedioPago(e.target.value)}
+                                >
+                                    <option value="EFECTIVO">Efectivo</option>
+                                    <option value="TARJETA_CREDITO">Tarjeta de Crédito</option>
+                                    <option value="TARJETA_DEBITO">Tarjeta de Débito</option>
+                                    <option value="CHEQUE">Cheque</option>
+                                </select>
+                            </div>
 
-                        <button
-                            type="submit"
-                            className={`${styles.button} ${styles.submitButton}`}
-                            disabled={loading}
-                        >
-                            {loading ? 'GUARDANDO...' : <><FaSave style={{ marginRight: '5px' }}/> REGISTRAR</>}
-                        </button>
-                    </div>
+                            {/* Monto - CON REF */}
+                            <div className={styles.fieldWrapper}>
+                                <label className={styles.label}>Monto a Abonar</label>
+                                <input
+                                    ref={montoRef} // REF AQUÍ
+                                    type="number"
+                                    className={styles.inputField}
+                                    value={monto}
+                                    onChange={e => setMonto(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    step="0.01"
+                                    min="0"
+                                />
+                            </div>
+                        </div>
 
-                </form>
-            </div>
+                        {/* --- CAMPOS VARIABLES --- */}
 
-            {/* --- MODALES --- */}
-            {showSuccess && (
-                <SuccessModal
-                    titulo="Consumo Guardado"
-                    descripcion={`Se agregó "${form.descripcion}" a la habitación ${form.numeroHabitacion} correctamente.`}
-                    onClose={handleSuccessClose}
-                />
+                        {/* CAMPOS DE TARJETA */}
+                        {medioPago.includes('TARJETA') && (
+                            <div style={{ marginTop: '15px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                <div className={styles.fieldWrapper}>
+                                    <label className={styles.label}>Red / Emisor</label>
+                                    <select
+                                        className={styles.inputField}
+                                        value={datosExtra.nombreTarjeta}
+                                        onChange={e => setDatosExtra({...datosExtra, nombreTarjeta: e.target.value})}
+                                    >
+                                        <option value="VISA">VISA</option>
+                                        <option value="MASTERCARD">MASTERCARD</option>
+                                        <option value="CABAL">CABAL</option>
+                                    </select>
+                                </div>
+                                <div className={styles.fieldWrapper}>
+                                    <label className={styles.label}>Últimos 4 dígitos</label>
+                                    <input
+                                        ref={tarjetaRef} // REF AQUÍ
+                                        type="text"
+                                        maxLength="4"
+                                        className={styles.inputField}
+                                        placeholder="xxxx"
+                                        value={datosExtra.numeroTarjeta}
+                                        onChange={e => setDatosExtra({...datosExtra, numeroTarjeta: e.target.value})}
+                                        onKeyDown={(e) => { if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Tab') e.preventDefault(); }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* CAMPOS DE CHEQUE */}
+                        {medioPago === 'CHEQUE' && (
+                            <div style={{ marginTop: '15px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                <div className={styles.fieldWrapper}>
+                                    <label className={styles.label}>Banco</label>
+                                    <input
+                                        ref={bancoRef}
+                                        type="text"
+                                        className={styles.inputField}
+                                        placeholder="Ej: Banco Nación"
+                                        value={datosExtra.banco}
+                                        onChange={e => setDatosExtra({...datosExtra, banco: e.target.value})}
+                                    />
+                                </div>
+                                <div className={styles.fieldWrapper}>
+                                    <label className={styles.label}>Nro. Cheque</label>
+                                    <input
+                                        ref={nroChequeRef}
+                                        type="number"
+                                        className={styles.inputField}
+                                        placeholder="Número"
+                                        value={datosExtra.nroCheque}
+                                        onChange={e => setDatosExtra({...datosExtra, nroCheque: e.target.value})}
+                                    />
+                                </div>
+                                <div className={styles.fieldWrapper}>
+                                    <label className={styles.label}>Plaza</label>
+                                    <input
+                                        ref={plazaRef}
+                                        type="text"
+                                        className={styles.inputField}
+                                        placeholder="Ej: Buenos Aires"
+                                        value={datosExtra.plaza}
+                                        onChange={e => setDatosExtra({...datosExtra, plaza: e.target.value})}
+                                    />
+                                </div>
+                                <div className={styles.fieldWrapper}>
+                                    <label className={styles.label}>Fecha de Cobro</label>
+                                    <input
+                                        ref={fechaChequeRef}
+                                        type="date"
+                                        className={styles.inputField}
+                                        value={datosExtra.fechaCobro}
+                                        onChange={e => setDatosExtra({...datosExtra, fechaCobro: e.target.value})}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className={styles.buttonContainer} style={{ marginTop: '30px' }}>
+                            <button type="button" className={`${styles.button} ${styles.cancelButton}`} onClick={() => setFacturaSeleccionada(null)}>
+                                <FaArrowLeft /> VOLVER
+                            </button>
+                            <button type="submit" className={`${styles.button} ${styles.submitButton}`} disabled={loading}>
+                                {loading ? 'PROCESANDO...' : <><FaCheck /> CONFIRMAR PAGO</>}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             )}
 
-            {errorMsg && (
-                <ErrorModal
-                    titulo="Error al Cargar"
-                    descripcion={errorMsg}
-                    onClose={() => setErrorMsg('')}
-                />
-            )}
-
+            {modal.type === 'success' && <SuccessModal titulo="Operación Exitosa" descripcion={modal.msg} onClose={() => setModal({ type: null })} />}
+            {modal.type === 'error' && <ErrorModal titulo="Atención" descripcion={modal.msg} onClose={() => setModal({ type: null })} />}
         </div>
     );
 }
