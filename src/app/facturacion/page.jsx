@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { previsualizarFactura, crearFactura, buscarResponsablePorCuit } from '../../services/api';
+import { previsualizarFactura, crearFactura, buscarResponsablePorCuit } from '@/services/api';
 import styles from './facturacion.module.css';
 import { FaUser, FaBuilding, FaCheck, FaSearch } from 'react-icons/fa';
 import ErrorModal from '../components/ui/modals/ErrorModal';
@@ -14,7 +14,6 @@ const FacturacionPage = () => {
     const [etapa, setEtapa] = useState(1);
     const [loading, setLoading] = useState(false);
 
-    // Modales
     const [errorModal, setErrorModal] = useState({ show: false, title: '', msg: '' });
     const [actionModal, setActionModal] = useState({ show: false, title: '', desc: '', action: null });
 
@@ -28,7 +27,6 @@ const FacturacionPage = () => {
     const [datosTercero, setDatosTercero] = useState({ cuit: '', razonSocial: '' });
     const [validandoCuit, setValidandoCuit] = useState(false);
 
-    // Recuperar datos al volver
     useEffect(() => {
         const nuevo = localStorage.getItem('nuevoResponsableCreado');
         if (nuevo) {
@@ -79,7 +77,6 @@ const FacturacionPage = () => {
         setTipoFactura('A');
     };
 
-    // --- VALIDACIÓN DE TERCERO (Con redirección corregida) ---
     const handleValidarTercero = async () => {
         const cuitIngresado = datosTercero.cuit.trim();
 

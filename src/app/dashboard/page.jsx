@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import ProtectedRoute from '../components/layout/ProtectedRoute.jsx';
 import styles from './Dashboard.module.css';
+import { FaMoneyBillWave } from 'react-icons/fa';
 
 // Importamos los íconos
 import {
@@ -97,6 +98,13 @@ export default function DashboardPage() {
                                 <div className={styles.iconWrapper}><FaCoffee size={32}/></div>
                                 <h3>Cargar Consumo</h3>
                                 <p>Registrar productos o servicios a una habitación.</p>
+                            </Link>
+
+                            {/* Pagos */}
+                            <Link href="/pagos" className={styles.card}>
+                                <div className={styles.iconWrapper}><FaMoneyBillWave size={32}/></div>
+                                <h3>Ingresar Pago</h3>
+                                <p>Cobrar facturas pendientes y gestionar caja.</p>
                             </Link>
 
                         </div>
