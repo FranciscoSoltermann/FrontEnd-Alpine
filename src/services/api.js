@@ -103,7 +103,7 @@ export const cargarConsumo = async (datos) => {
     return await response.json();
 };
 
-// --- RESPONSABLES DE PAGO (Nuevo) ---
+// --- RESPONSABLES DE PAGO ---
 export const crearResponsablePago = async (datos) => {
     // const token = localStorage.getItem('authToken'); // Descomentar si usas seguridad
 
@@ -184,6 +184,29 @@ export const crearFactura = async (solicitudDTO) => {
         console.error('Error en crearFactura:', error.message);
         throw new Error(error.message || 'No se pudo crear la factura.');
     }
+};
+
+// --- PAGOS ---
+export const buscarFacturasPendientes = async (numeroHabitacion) => {
+    const res = await fetch(`${API_URL}/pagos/pendientes?habitacion=${numeroHabitacion}`);
+    if (!res.ok) {
+        if (res.status === 404) return []; // Manejo elegante de "no encontrado"
+        throw new Error('Error al buscar facturas');
+    }
+    return await res.json();
+};
+
+export const registrarPago = async (pagoData) => {
+    const res = await fetch(`${API_URL}/pagos/registrar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pagoData)
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Error al registrar pago');
+    }
+    return await res.json();
 };
 
 // --- UTILS: MANEJO DE ERRORES CENTRALIZADO ---

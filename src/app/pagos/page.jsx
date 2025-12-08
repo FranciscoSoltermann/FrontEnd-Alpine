@@ -4,10 +4,10 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { cargarConsumo } from '@/services/api';
 import styles from '../../components/forms/Formulario.module.css';
-import { FaArrowLeft, FaSave, FaBroom, FaCoffee } from 'react-icons/fa';
+import { FaArrowLeft, FaSave, FaCoffee } from 'react-icons/fa';
 
-import SuccessModal from '../../components/ui/modals/SuccessModal';
-import ErrorModal from '../../components/ui/modals/ErrorModal';
+import SuccessModal from '../components/ui/modals/SuccessModal';
+import ErrorModal from '../components/ui/modals/ErrorModal';
 
 export default function CargarConsumoPage() {
     const router = useRouter();
@@ -20,9 +20,14 @@ export default function CargarConsumoPage() {
     });
 
     const [loading, setLoading] = useState(false);
-
     const [showSuccess, setShowSuccess] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
+
+    const handleKeyDown = (e) => {
+        if (["e", "E", "+", "-", ".", ","].includes(e.key)) {
+            e.preventDefault();
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -42,9 +47,7 @@ export default function CargarConsumoPage() {
 
         try {
             await cargarConsumo(form);
-
             setShowSuccess(true);
-
         } catch (err) {
             setErrorMsg(err.message);
         } finally {
@@ -77,17 +80,20 @@ export default function CargarConsumoPage() {
 
                 <form onSubmit={handleSubmit}>
 
-                    {/* 1. Habitación */}
+                    {/* 1. Habitación (CORREGIDO) */}
                     <div className={styles.fieldWrapper}>
                         <Label>Nro. de Habitación</Label>
                         <input
+                            type="number" // <--- CAMBIO 1: Tipo numérico
                             className={styles.inputField}
                             name="numeroHabitacion"
                             value={form.numeroHabitacion}
                             onChange={handleChange}
+                            onKeyDown={handleKeyDown} // <--- CAMBIO 2: Bloqueo de teclas
                             placeholder="Ej: 104"
                             autoFocus
                             required
+                            min="1"
                         />
                     </div>
 
@@ -99,12 +105,12 @@ export default function CargarConsumoPage() {
                             name="descripcion"
                             value={form.descripcion}
                             onChange={handleChange}
-                            placeholder="Ej: Coca Cola, Lavandería, Rotura Vaso..."
+                            placeholder="Ej: Coca Cola, Lavandería..."
                             required
                         />
                     </div>
 
-                    {/* 3. Precio y Cantidad (En una misma fila) */}
+                    {/* 3. Precio y Cantidad */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                         <div className={styles.fieldWrapper}>
                             <Label>Precio Unitario ($)</Label>
@@ -114,6 +120,7 @@ export default function CargarConsumoPage() {
                                 name="precioUnitario"
                                 value={form.precioUnitario}
                                 onChange={handleChange}
+                                onKeyDown={handleKeyDown} // También útil para el precio
                                 placeholder="0.00"
                                 min="0"
                                 step="0.01"
@@ -128,6 +135,7 @@ export default function CargarConsumoPage() {
                                 name="cantidad"
                                 value={form.cantidad}
                                 onChange={handleChange}
+                                onKeyDown={handleKeyDown}
                                 min="1"
                                 required
                             />
@@ -157,7 +165,6 @@ export default function CargarConsumoPage() {
             </div>
 
             {/* --- MODALES --- */}
-
             {showSuccess && (
                 <SuccessModal
                     titulo="Consumo Guardado"

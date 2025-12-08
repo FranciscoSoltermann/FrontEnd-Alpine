@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import styles from './facturaDetalle.module.css'; // Asegúrate de tener este CSS o reutiliza uno
+import styles from './facturaDetalle.module.css';
 import { FaPrint, FaArrowLeft, FaCheckCircle } from 'react-icons/fa';
 
 export default function DetalleFacturaPage() {
@@ -10,28 +10,24 @@ export default function DetalleFacturaPage() {
     const [factura, setFactura] = useState(null);
 
     useEffect(() => {
-        // Recuperamos los datos que guardamos en el paso anterior
         const data = localStorage.getItem('ultimaFactura');
         if (data) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setFactura(JSON.parse(data));
         } else {
-            router.push('/facturacion'); // Si no hay datos, volver al inicio
+            router.push('/facturacion');
         }
     }, [router]);
 
     if (!factura) return null;
 
-    // --- CÁLCULOS DE IVA ---
     const esFacturaA = factura.tipoFactura === 'A';
     const TASA_IVA = 0.21;
 
-    // Función auxiliar para mostrar precios
     const formatCurrency = (valor) => {
         return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(valor);
     };
 
-    // Si es A, los precios unitarios en la lista deben verse SIN IVA (Netos)
-    // Si es B, se ven CON IVA (Finales)
     const calcularPrecioMostrar = (precioFinal) => {
         return esFacturaA ? (precioFinal / (1 + TASA_IVA)) : precioFinal;
     };
@@ -77,7 +73,6 @@ export default function DetalleFacturaPage() {
                     </thead>
                     <tbody>
                     {factura.items.map((item, index) => {
-                        // Calculamos valores de visualización (Netos si es A)
                         const precioUnitarioMostrar = calcularPrecioMostrar(item.precioUnitario);
                         const subtotalMostrar = calcularPrecioMostrar(item.subtotal);
 
