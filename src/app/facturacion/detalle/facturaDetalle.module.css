@@ -2,7 +2,7 @@
     display: flex;
     justify-content: center;
     padding: 40px 20px;
-    background-color: #525252; /* Fondo oscuro para resaltar la hoja */
+    background-color: #e6f5e6; /* Fondo oscuro para resaltar la hoja */
     min-height: 100vh;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }

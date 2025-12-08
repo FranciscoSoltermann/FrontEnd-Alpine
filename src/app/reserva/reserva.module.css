@@ -60,7 +60,7 @@
     font-weight: bold; border-radius: 6px; cursor: pointer; height: 42px; width: 100%;
     transition: opacity 0.2s;
 }
-.btnBuscar:hover { opacity: 0.9; } .btnBuscar:disabled { background-color: #b2ebf2; cursor: not-allowed; }
+.btnBuscar:hover { opacity: 0.9; } .btnBuscar:disabled { background-color: #0056b3; cursor: not-allowed; }
 
 .topActions { display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 20px; }
 .btnVolverOrange { background-color: #ff9800; color: white; padding: 10px 25px; font-weight: bold; border-radius: 4px; border: none; cursor: pointer; transition: background 0.2s; }

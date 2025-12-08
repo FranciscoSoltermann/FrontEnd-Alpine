@@ -10,7 +10,7 @@ import styles from '../reserva.module.css';
 
 const API_URL = "http://localhost:8080/api";
 
-// --- HELPERS ---
+// --- HELPERS DE FECHA ---
 const parseDateLocal = (dateStr) => {
     if (!dateStr) return null;
     const parts = dateStr.split('-').map(Number);
@@ -35,6 +35,7 @@ export default function OcuparPage() {
     const todayString = getTodayString();
 
     const [step, setStep] = useState(1);
+
     // FIJAMOS LA ACCIÓN A 'OCUPAR'
     const accionTipo = 'OCUPAR';
 
@@ -54,21 +55,40 @@ export default function OcuparPage() {
     const [fechaDesde, setFechaDesde] = useState('');
     const [fechaHasta, setFechaHasta] = useState('');
 
-    // Datos Formulario
+    // Datos Formulario Titular
     const [titular, setTitular] = useState({
         tipoDoc: 'DNI', numDoc: '', nombre: '', apellido: '', telefono: ''
     });
     const [buscandoTitular, setBuscandoTitular] = useState(false);
-    const [ocupantesPorHab, setOcupantesPorHab] = useState({});
-    const [errores, setErrores] = useState({});
 
-    // --- VALIDACIONES INPUTS ---
+    // ESTADOS DE OCUPANTES Y ERRORES
+    const [ocupantesPorHab, setOcupantesPorHab] = useState({});
+    const [ocupantesErrores, setOcupantesErrores] = useState({}); // Nuevo estado para errores de ocupantes
+    const [errores, setErrores] = useState({}); // Errores del titular
+
+    // --- VALIDACIONES INPUTS TITULAR ---
     const validarInput = (campo, valor) => {
         let msg = "";
+        // Validación DNI Titular: 7 u 8 dígitos
         if (campo === 'numDoc' && valor && !/^[0-9]{7,8}$/.test(valor)) msg = "El DNI debe tener 7 u 8 números.";
         if ((campo === 'nombre' || campo === 'apellido') && valor && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(valor)) msg = "Solo se permiten letras.";
         if (campo === 'telefono' && valor && !/^[0-9]+$/.test(valor)) msg = "Solo se permiten números.";
         setErrores(prev => ({ ...prev, [campo]: msg }));
+    };
+
+    // --- VALIDACIONES OCUPANTES (CORREGIDO: RANGO DNI) ---
+    const validarDatoOcupante = (campo, valor) => {
+        if (!valor || valor.trim() === '') return "Requerido";
+
+        if (campo === 'dni') {
+            // CORRECCIÓN: Regex estricto para 7 u 8 dígitos numéricos
+            if (!/^[0-9]{7,8}$/.test(valor)) return "Debe tener 7 u 8 números";
+        }
+        else if (campo === 'nombre' || campo === 'apellido') {
+            if (valor.length < 2 || valor.length > 50) return "Entre 2 y 50 letras";
+            if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(valor)) return "Solo letras";
+        }
+        return ""; // Sin error
     };
 
     const handleTitularChange = (campo, valor) => {
@@ -109,18 +129,41 @@ export default function OcuparPage() {
             if (lista.length >= capacidadMax) return prev;
             return { ...prev, [habId]: [...lista, { nombre: '', apellido: '', dni: '' }] };
         });
+        // Sincronizamos el array de errores
+        setOcupantesErrores(prev => {
+            const lista = prev[habId] || [];
+            return { ...prev, [habId]: [...lista, { nombre: '', apellido: '', dni: '' }] };
+        });
     };
+
     const quitarOcupante = (habId, index) => {
         setOcupantesPorHab(prev => {
             const lista = [...(prev[habId] || [])];
             lista.splice(index, 1);
             return { ...prev, [habId]: lista };
         });
+        // Quitamos el error correspondiente
+        setOcupantesErrores(prev => {
+            const lista = [...(prev[habId] || [])];
+            lista.splice(index, 1);
+            return { ...prev, [habId]: lista };
+        });
     };
+
     const handleOcupanteChange = (habId, index, campo, valor) => {
+        // 1. Actualizar valor
         setOcupantesPorHab(prev => {
             const lista = [...(prev[habId] || [])];
             lista[index] = { ...lista[index], [campo]: valor };
+            return { ...prev, [habId]: lista };
+        });
+
+        // 2. Validar en tiempo real y actualizar error
+        const errorMsg = validarDatoOcupante(campo, valor);
+        setOcupantesErrores(prev => {
+            const lista = [...(prev[habId] || [])];
+            if (!lista[index]) lista[index] = { nombre: '', apellido: '', dni: '' }; // safety check
+            lista[index] = { ...lista[index], [campo]: errorMsg };
             return { ...prev, [habId]: lista };
         });
     };
@@ -128,7 +171,6 @@ export default function OcuparPage() {
     // --- LOGICA PRINCIPAL ---
     const handleBuscar = async () => {
         if (!fechaDesde || !fechaHasta) return showError('Faltan datos', 'Seleccione fechas.');
-        // Permitimos editar fechas, pero validamos lógica básica
         if (fechaDesde < todayString) return showError('Error', 'No se puede ocupar en el pasado.');
         if (fechaDesde > fechaHasta) return showError('Error', 'Ingreso mayor a salida.');
 
@@ -154,6 +196,7 @@ export default function OcuparPage() {
             setStep(2);
             setSelectedCells([]);
             setOcupantesPorHab({});
+            setOcupantesErrores({});
         } catch (e) { showError('Error', e.message); } finally { setLoading(false); }
     };
 
@@ -168,17 +211,56 @@ export default function OcuparPage() {
 
     const handleContinuar = () => {
         if (selectedCells.length === 0) return showError('Error', "Seleccione una celda.");
-        // Inicializamos los arrays de ocupantes para las habitaciones seleccionadas
+
+        // Inicializamos arrays para ocupantes y errores
         const habsUnicas = [...new Set(selectedCells.map(s => s.habId))];
         const mapInit = { ...ocupantesPorHab };
-        habsUnicas.forEach(id => { if (!mapInit[id]) mapInit[id] = []; });
+        const errInit = { ...ocupantesErrores };
+
+        habsUnicas.forEach(id => {
+            if (!mapInit[id]) mapInit[id] = [];
+            if (!errInit[id]) errInit[id] = [];
+        });
+
         setOcupantesPorHab(mapInit);
+        setOcupantesErrores(errInit);
         setStep(3);
     };
 
     const onFormSubmit = (e) => {
         e.preventDefault();
-        if (Object.values(errores).some(m => m)) return showError("Error", "Corrija los campos en rojo.");
+
+        // 1. Validar Titular
+        if (Object.values(errores).some(m => m)) return showError("Error", "Corrija los campos del titular.");
+        if (!titular.numDoc || !titular.nombre) return showError("Faltan datos", "Complete los datos del titular.");
+
+        // 2. VALIDACIÓN MASIVA DE OCUPANTES ANTES DE ENVIAR
+        let hayErroresOcupantes = false;
+        const nuevosErrores = { ...ocupantesErrores };
+        const habsSeleccionadasUnicas = habitaciones.filter(h => selectedCells.some(s => s.habId === getHabId(h)));
+
+        habsSeleccionadasUnicas.forEach(hab => {
+            const hId = getHabId(hab);
+            const ocupantes = ocupantesPorHab[hId] || [];
+            if (!nuevosErrores[hId]) nuevosErrores[hId] = [];
+
+            ocupantes.forEach((ocup, idx) => {
+                const errNombre = validarDatoOcupante('nombre', ocup.nombre);
+                const errApellido = validarDatoOcupante('apellido', ocup.apellido);
+                const errDni = validarDatoOcupante('dni', ocup.dni);
+
+                if (errNombre || errApellido || errDni) hayErroresOcupantes = true;
+
+                if (!nuevosErrores[hId][idx]) nuevosErrores[hId][idx] = {};
+                nuevosErrores[hId][idx] = { nombre: errNombre, apellido: errApellido, dni: errDni };
+            });
+        });
+
+        if (hayErroresOcupantes) {
+            setOcupantesErrores(nuevosErrores);
+            return showError("Datos inválidos", "Revise los campos en rojo de los ocupantes (verifique DNI 7 u 8 dígitos).");
+        }
+
         setTipoAccionModal('CONFIRMAR_OPERACION');
         showConfirmAction(`Confirmar OCUPACIÓN`, `¿Desea registrar el ingreso?`);
     };
@@ -246,7 +328,7 @@ export default function OcuparPage() {
         } catch (e) { showError('Error', e.message); }
     };
 
-    // Helpers
+    // Helpers UI
     const showError = (t, d) => setErrorModal({ isOpen: true, titulo: t, descripcion: d });
     const closeError = () => setErrorModal({ ...errorModal, isOpen: false });
     const showSuccess = (t, d) => setSuccessModal({ isOpen: true, titulo: t, descripcion: d });
@@ -254,7 +336,7 @@ export default function OcuparPage() {
         setSuccessModal({ ...successModal, isOpen: false });
         setStep(2); setSelectedCells([]);
         setTitular({ tipoDoc: 'DNI', numDoc: '', nombre: '', apellido: '', telefono: '' });
-        setOcupantesPorHab({}); setErrores({});
+        setOcupantesPorHab({}); setOcupantesErrores({}); setErrores({});
         handleBuscar();
     };
     const showConfirmAction = (t, d) => setActionModal({ isOpen: true, titulo: t, descripcion: d });
@@ -352,7 +434,7 @@ export default function OcuparPage() {
                                     <div style={{marginTop:'20px'}}>
                                         <h4 style={{color:'#666', borderBottom:'1px solid #ddd', paddingBottom:'5px', marginBottom:'15px'}}>Titular de la Reserva</h4>
 
-                                        {/* --- FILA 1: TIPO DOC y NRO DOC (CON SELECTOR) --- */}
+                                        {/* --- FILA 1: TIPO DOC y NRO DOC --- */}
                                         <div className={styles.gridMiddle}>
                                             <div className={styles.fieldWrapper}>
                                                 <label>Tipo Doc</label>
@@ -370,7 +452,7 @@ export default function OcuparPage() {
                                             </div>
                                         </div>
 
-                                        {/* --- FILA 2: NOMBRE, APELLIDO, TELEFONO (3 Columnas) --- */}
+                                        {/* --- FILA 2: NOMBRE, APELLIDO, TELEFONO --- */}
                                         <div className={styles.gridBottom}>
                                             <div className={styles.fieldWrapper}>
                                                 <label>Nombre (*)</label>
@@ -403,15 +485,59 @@ export default function OcuparPage() {
                                                             ({ocupantes.length}/{hab.capacidad})
                                                         </span>
                                                     </div>
-                                                    {ocupantes.map((ocup, idx) => (
-                                                        <div key={idx} className={styles.ocupanteRow}>
-                                                            <span style={{color:'#999', fontSize:'0.8rem', width:'20px'}}>#{idx+1}</span>
-                                                            <input className={styles.inputSmall} placeholder="Nombre" value={ocup.nombre} onChange={e => handleOcupanteChange(hId, idx, 'nombre', e.target.value)} required />
-                                                            <input className={styles.inputSmall} placeholder="Apellido" value={ocup.apellido} onChange={e => handleOcupanteChange(hId, idx, 'apellido', e.target.value)} required />
-                                                            <input className={styles.inputSmall} placeholder="DNI" value={ocup.dni} onChange={e => handleOcupanteChange(hId, idx, 'dni', e.target.value)} required />
-                                                            <button type="button" className={styles.btnRemove} onClick={() => quitarOcupante(hId, idx)}>✕</button>
-                                                        </div>
-                                                    ))}
+
+                                                    {ocupantes.map((ocup, idx) => {
+                                                        const errs = ocupantesErrores[hId]?.[idx] || {};
+                                                        return (
+                                                            <div key={idx} style={{ marginBottom: '10px', borderBottom:'1px dashed #eee', paddingBottom:'5px' }}>
+                                                                <div className={styles.ocupanteRow}>
+                                                                    <span style={{color:'#999', fontSize:'0.8rem', width:'20px', alignSelf:'center'}}>#{idx+1}</span>
+
+                                                                    {/* NOMBRE */}
+                                                                    <div style={{display:'flex', flexDirection:'column'}}>
+                                                                        <input
+                                                                            className={styles.inputSmall}
+                                                                            style={{ borderColor: errs.nombre ? 'red' : '#ddd' }}
+                                                                            placeholder="Nombre"
+                                                                            value={ocup.nombre}
+                                                                            onChange={e => handleOcupanteChange(hId, idx, 'nombre', e.target.value)}
+                                                                            required
+                                                                        />
+                                                                        {errs.nombre && <span style={{color:'red', fontSize:'0.7rem'}}>{errs.nombre}</span>}
+                                                                    </div>
+
+                                                                    {/* APELLIDO */}
+                                                                    <div style={{display:'flex', flexDirection:'column'}}>
+                                                                        <input
+                                                                            className={styles.inputSmall}
+                                                                            style={{ borderColor: errs.apellido ? 'red' : '#ddd' }}
+                                                                            placeholder="Apellido"
+                                                                            value={ocup.apellido}
+                                                                            onChange={e => handleOcupanteChange(hId, idx, 'apellido', e.target.value)}
+                                                                            required
+                                                                        />
+                                                                        {errs.apellido && <span style={{color:'red', fontSize:'0.7rem'}}>{errs.apellido}</span>}
+                                                                    </div>
+
+                                                                    {/* DNI */}
+                                                                    <div style={{display:'flex', flexDirection:'column'}}>
+                                                                        <input
+                                                                            className={styles.inputSmall}
+                                                                            style={{ borderColor: errs.dni ? 'red' : '#ddd' }}
+                                                                            placeholder="DNI"
+                                                                            value={ocup.dni}
+                                                                            onChange={e => handleOcupanteChange(hId, idx, 'dni', e.target.value)}
+                                                                            required
+                                                                        />
+                                                                        {errs.dni && <span style={{color:'red', fontSize:'0.7rem'}}>{errs.dni}</span>}
+                                                                    </div>
+
+                                                                    <button type="button" className={styles.btnRemove} onClick={() => quitarOcupante(hId, idx)} style={{alignSelf:'flex-start', marginTop:'5px'}}>✕</button>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+
                                                     {!lleno && (
                                                         <button type="button" className={styles.btnAdd} onClick={() => agregarOcupante(hId, hab.capacidad)}>
                                                             + Agregar Ocupante

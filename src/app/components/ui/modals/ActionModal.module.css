@@ -76,7 +76,7 @@
 
 /* Estilo para el botón de "Confirmar" (Acción 2) - Verde */
 .confirmButton {
-  background: #48bb78; /* Verde */
+    background-color: #90ee90; /* Verde */
   color: white;
 }
 
