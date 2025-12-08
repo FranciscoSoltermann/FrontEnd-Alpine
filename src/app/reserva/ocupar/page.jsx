@@ -186,7 +186,7 @@ export default function OcuparPage() {
     const handleModalConfirm = () => {
         if (tipoAccionModal === 'IR_A_NUEVO_HUESPED') {
             closeAction();
-            router.push('/darDeAlta');
+            router.push('/huesped/darAlta');
         } else {
             handleConfirmarReal();
         }
