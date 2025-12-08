@@ -3,19 +3,18 @@
 import Link from 'next/link';
 import ProtectedRoute from '../components/layout/ProtectedRoute.jsx';
 import styles from './Dashboard.module.css';
-import { FaMoneyBillWave } from 'react-icons/fa';
 
 // Importamos los íconos
 import {
     FaSearch,
-    FaUserPlus,     // Icono para Alta Huésped (lo agregué por si lo quieres usar)
     FaUserMinus,
-    FaUserTie,      // Responsable
+    FaUserTie,
     FaCalendarCheck,
     FaBed,
     FaKey,
     FaPrint,
-    FaChartLine, FaCoffee     // Un icono genérico para admin si se necesita
+    FaMoneyBillWave,
+    FaCoffee
 } from 'react-icons/fa';
 
 export default function DashboardPage() {
@@ -31,7 +30,7 @@ export default function DashboardPage() {
                         <div className={styles.grid}>
 
                             {/* Buscar / Gestionar Huésped */}
-                            <Link href="huesped/buscar" className={styles.card}>
+                            <Link href="/huesped/buscar" className={styles.card}>
                                 <div className={styles.iconWrapper}><FaSearch size={32}/></div>
                                 <h3>Buscar Huésped</h3>
                                 <p>Consultar, modificar o dar de alta nuevos huéspedes.</p>
@@ -45,7 +44,7 @@ export default function DashboardPage() {
                             </Link>
 
                             {/* Baja Huésped */}
-                            <Link href="huesped/darBaja" className={styles.card}>
+                            <Link href="/huesped/darBaja" className={styles.card}>
                                 <div className={styles.iconWrapper}><FaUserMinus size={32}/></div>
                                 <h3>Baja Huésped</h3>
                                 <p>Eliminar registros del sistema.</p>
@@ -53,20 +52,20 @@ export default function DashboardPage() {
                         </div>
                     </section>
 
-                    {/* --- SECCIÓN 2: RESERVAS Y HABITACIONES --- */}
+                    {/* --- SECCIÓN 2: RECEPCIÓN Y HABITACIONES --- */}
                     <section className={styles.section}>
                         <h2 className={styles.sectionTitle}>Recepción y Habitaciones</h2>
                         <div className={styles.grid}>
 
-                            {/* Reservar */}
-                            <Link href="/reserva" className={styles.card}>
+                            {/* CORREGIDO: Apunta directo a /reserva/nueva */}
+                            <Link href="/reserva/nueva" className={styles.card}>
                                 <div className={styles.iconWrapper}><FaCalendarCheck size={32}/></div>
                                 <h3>Nueva Reserva</h3>
                                 <p>Consultar disponibilidad y crear reservas.</p>
                             </Link>
 
-                            {/* Ocupar (Check-in) */}
-                            <Link href="/ocupar" className={styles.card}>
+                            {/* CORREGIDO: Apunta directo a /reserva/ocupar */}
+                            <Link href="/reserva/ocupar" className={styles.card}>
                                 <div className={styles.iconWrapper}><FaKey size={32}/></div>
                                 <h3>Ocupar Habitación</h3>
                                 <p>Registrar ingreso inmediato (Check-in).</p>

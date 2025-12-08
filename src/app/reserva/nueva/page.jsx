@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import ProtectedRoute from '../components/layout/ProtectedRoute';
-import ErrorModal from '../components/ui/modals/ErrorModal';
-import SuccessModal from '../components/ui/modals/SuccessModal';
-import ActionModal from '../components/ui/modals/ActionModal';
-import styles from './reserva.module.css';
+import ProtectedRoute from '../../components/layout/ProtectedRoute';
+import ErrorModal from '../../components/ui/modals/ErrorModal';
+import SuccessModal from '../../components/ui/modals/SuccessModal';
+import ActionModal from '../../components/ui/modals/ActionModal';
+import styles from '../reserva.module.css'; // Tu CSS compartido
 
 const API_URL = "http://localhost:8080/api";
 
@@ -32,11 +32,13 @@ const getTodayString = () => {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 };
 
-export default function ReservasPage() {
+export default function NuevaReservaPage() {
     const router = useRouter();
     const todayString = getTodayString();
 
     const [step, setStep] = useState(1);
+
+    // RESTAURADO: Necesitamos cambiar entre 'RESERVAR' y 'ELIMINAR' dinámicamente
     const [accionTipo, setAccionTipo] = useState('RESERVAR');
 
     const [habitaciones, setHabitaciones] = useState([]);
@@ -60,13 +62,12 @@ export default function ReservasPage() {
         tipoDoc: 'DNI', numDoc: '', nombre: '', apellido: '', telefono: ''
     });
     const [buscandoTitular, setBuscandoTitular] = useState(false);
-    const [ocupantesPorHab, setOcupantesPorHab] = useState({});
     const [errores, setErrores] = useState({});
 
-    // --- DETECCIÓN DE CELDAS RESERVADAS ---
+    // --- DETECCIÓN DE CELDAS RESERVADAS (AMARILLAS) ---
     const hayReservasSeleccionadas = selectedCells.some(c => c.estadoOriginal === 'RESERVADA');
 
-    // --- VALIDACIONES ---
+    // --- VALIDACIONES INPUTS ---
     const validarInput = (campo, valor) => {
         let msg = "";
         if (campo === 'numDoc' && valor && !/^[0-9]{7,8}$/.test(valor)) msg = "El DNI debe tener 7 u 8 números.";
@@ -103,34 +104,7 @@ export default function ReservasPage() {
                 setTipoAccionModal('IR_A_NUEVO_HUESPED');
                 showConfirmAction("Huésped no encontrado", `El DNI ${titular.numDoc} no existe. ¿Ir a Nuevo Huésped?`);
             }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setBuscandoTitular(false);
-        }
-    };
-
-    // --- HANDLERS OCUPANTES ---
-    const agregarOcupante = (habId, capacidadMax) => {
-        setOcupantesPorHab(prev => {
-            const lista = prev[habId] || [];
-            if (lista.length >= capacidadMax) return prev;
-            return { ...prev, [habId]: [...lista, { nombre: '', apellido: '', dni: '' }] };
-        });
-    };
-    const quitarOcupante = (habId, index) => {
-        setOcupantesPorHab(prev => {
-            const lista = [...(prev[habId] || [])];
-            lista.splice(index, 1);
-            return { ...prev, [habId]: lista };
-        });
-    };
-    const handleOcupanteChange = (habId, index, campo, valor) => {
-        setOcupantesPorHab(prev => {
-            const lista = [...(prev[habId] || [])];
-            lista[index] = { ...lista[index], [campo]: valor };
-            return { ...prev, [habId]: lista };
-        });
+        } catch (e) { console.error(e); } finally { setBuscandoTitular(false); }
     };
 
     // --- LOGICA PRINCIPAL ---
@@ -160,83 +134,58 @@ export default function ReservasPage() {
             setMatrixData(sorted);
             setStep(2);
             setSelectedCells([]);
-            setOcupantesPorHab({});
-        } catch (e) {
-            showError('Error', e.message);
-        } finally {
-            setLoading(false);
-        }
+            setAccionTipo('RESERVAR'); // Resetear a reservar por defecto al buscar
+        } catch (e) { showError('Error', e.message); } finally { setLoading(false); }
     };
 
-    // LOGICA SELECCIÓN
-    // MODIFICADO: Eliminamos la dependencia del idReserva, nos basamos en Habitación + Fecha
     const handleCellClick = (habId, fecha, estado, tipo, numero, capacidad) => {
         if (estado === 'OCUPADA' || estado === 'MANTENIMIENTO') return;
-
         setSelectedCells(prev => {
             const exists = prev.find(i => i.habId === habId && i.fecha === fecha);
             if (exists) return prev.filter(i => i !== exists);
-            // Guardamos la celda seleccionada
             return [...prev, { habId, fecha, tipoHabitacion: tipo, numero, capacidad, estadoOriginal: estado }];
         });
     };
 
+    // RESTAURADO: Manejador de botones (Reservar o Eliminar)
     const handleIniciarProceso = (tipo) => {
         if (selectedCells.length === 0) return showError('Error', "Seleccione una celda.");
 
-        // --- LÓGICA CORREGIDA: ELIMINAR RESERVA POR SELECCIÓN ---
+        // --- LÓGICA ELIMINAR ---
         if (tipo === 'ELIMINAR') {
-            // Filtramos celdas amarillas
             const celdasValidas = selectedCells.filter(c => c.estadoOriginal === 'RESERVADA');
+            if (celdasValidas.length === 0) return showError("Error", "Seleccione al menos una celda RESERVADA (Amarillo).");
 
-            if (celdasValidas.length === 0) {
-                return showError("Error", "Seleccione al menos una celda en estado RESERVADA (Amarillo) para eliminar.");
-            }
-
-            // Validamos que sea de la misma habitación (por simplicidad en la UI)
+            // Validar misma habitación
             const primeraHab = celdasValidas[0].habId;
-            const mismaHabitacion = celdasValidas.every(c => c.habId === primeraHab);
+            if (!celdasValidas.every(c => c.habId === primeraHab)) return showError("Atención", "Elimine reservas de una habitación a la vez.");
 
-            if (!mismaHabitacion) {
-                return showError("Atención", "Por seguridad, elimine reservas de una habitación a la vez.");
-            }
-
-            // Configuramos el modal para confirmar eliminación usando los datos de la primera celda válida
-            // El backend se encargará de buscar la reserva activa en esa fecha.
             setAccionTipo('ELIMINAR');
             setTipoAccionModal('CONFIRMAR_OPERACION');
             const celda = celdasValidas[0];
-            showConfirmAction("Eliminar Reserva", `¿Está seguro de eliminar la reserva de la Habitación ${celda.numero} asociada a la fecha ${celda.fecha}?`);
+            showConfirmAction("Eliminar Reserva", `¿Está seguro de eliminar la reserva de la Habitación ${celda.numero} para la fecha ${celda.fecha}?`);
             return;
         }
-        // -------------------------------------
 
+        // --- LÓGICA RESERVAR ---
         if (tipo === 'RESERVAR') {
-            const hayReservadas = selectedCells.some(cell => cell.estadoOriginal === 'RESERVADA');
-            if (hayReservadas) {
-                return showError("Acción no válida", "Seleccionó habitaciones que YA están RESERVADAS. Use el botón 'OCUPAR' para confirmar el ingreso o 'ELIMINAR' si desea cancelar.");
-            }
+            if (hayReservasSeleccionadas) return showError("Acción no válida", "Seleccionó habitaciones que YA están RESERVADAS. Use 'ELIMINAR' si desea cancelar.");
+            setAccionTipo('RESERVAR');
+            setStep(3); // Ir al formulario solo si es reservar
         }
-
-        setAccionTipo(tipo);
-        const habsUnicas = [...new Set(selectedCells.map(s => s.habId))];
-        const mapInit = { ...ocupantesPorHab };
-        habsUnicas.forEach(id => { if (!mapInit[id]) mapInit[id] = []; });
-        setOcupantesPorHab(mapInit);
-        setStep(3);
     };
 
     const onFormSubmit = (e) => {
         e.preventDefault();
         if (Object.values(errores).some(m => m)) return showError("Error", "Corrija los campos en rojo.");
         setTipoAccionModal('CONFIRMAR_OPERACION');
-        showConfirmAction(`Confirmar ${accionTipo}`, `¿Desea registrar esta operación?`);
+        showConfirmAction(`Confirmar RESERVA`, `¿Desea crear la reserva?`);
     };
 
     const handleModalConfirm = () => {
         if (tipoAccionModal === 'IR_A_NUEVO_HUESPED') {
             closeAction();
-            router.push('/darDeAlta');
+            router.push('/huesped/darAlta');
         } else {
             handleConfirmarReal();
         }
@@ -245,33 +194,38 @@ export default function ReservasPage() {
     const handleConfirmarReal = async () => {
         closeAction();
         try {
-            // --- NUEVA LÓGICA: EJECUCIÓN DEL DELETE POR HABITACIÓN Y FECHA ---
+            // --- CORRECCIÓN: ELIMINAR MÚLTIPLES RESERVAS ---
             if (accionTipo === 'ELIMINAR') {
-                // Tomamos una de las celdas seleccionadas para identificar la reserva
-                const celda = selectedCells.find(c => c.estadoOriginal === 'RESERVADA');
+                // 1. Filtramos TODAS las celdas amarillas seleccionadas
+                const celdasAEliminar = selectedCells.filter(c => c.estadoOriginal === 'RESERVADA');
 
-                if (!celda) throw new Error("No hay celda reservada seleccionada.");
+                if (celdasAEliminar.length === 0) throw new Error("No hay reservas seleccionadas para eliminar.");
 
-                // Enviamos ID Habitación y Fecha. El backend buscará la reserva correspondiente.
-                const query = new URLSearchParams({
-                    idHabitacion: celda.habId,
-                    fecha: celda.fecha
+                // 2. Creamos una promesa de borrado por cada celda seleccionada
+                const deletePromises = celdasAEliminar.map(celda => {
+                    const query = new URLSearchParams({
+                        idHabitacion: celda.habId,
+                        fecha: celda.fecha
+                    });
+                    // Retornamos la petición fetch
+                    return fetch(`${API_URL}/reservas/cancelar?${query}`, { method: 'DELETE' });
                 });
 
-                const res = await fetch(`${API_URL}/reservas/cancelar?${query}`, {
-                    method: 'DELETE'
-                });
+                // 3. Esperamos a que TODAS las peticiones terminen
+                const responses = await Promise.all(deletePromises);
 
-                if (!res.ok) {
-                    const err = await res.json().catch(() => ({}));
-                    throw new Error(err.mensaje || "Error al eliminar la reserva.");
+                // 4. Verificamos si hubo algún error grave
+                // (Opcional: Si alguna falla porque ya se borró, no pasa nada, pero si todas fallan lanzamos error)
+                const allFailed = responses.every(r => !r.ok);
+                if (allFailed) {
+                    throw new Error("Error al eliminar las reservas seleccionadas.");
                 }
 
-                showSuccess('Reserva Eliminada', 'La reserva ha sido cancelada y la habitación liberada.');
+                showSuccess('Reservas Eliminadas', `Se han liberado ${celdasAEliminar.length} fechas correctamente.`);
                 return;
             }
-            // ------------------------------------------
 
+            // --- LÓGICA CREAR RESERVA (POST) ---
             const grupos = {};
             selectedCells.forEach(s => {
                 if (!grupos[s.habId]) grupos[s.habId] = [];
@@ -307,40 +261,32 @@ export default function ReservasPage() {
                             telefono: titular.telefono
                         },
                         habitaciones: [parseInt(habId)],
-                        ocupantesPorHabitacion: { [habId]: ocupantesPorHab[habId] || [] }
+                        ocupantesPorHabitacion: {}
                     };
 
-                    const endpoint = accionTipo === 'OCUPAR' ? '/reservas/ocupar' : '/reservas';
-                    const res = await fetch(`${API_URL}${endpoint}`, {
+                    const res = await fetch(`${API_URL}/reservas`, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
-                    if (!res.ok) {
-                        const err = await res.json().catch(() => ({}));
-                        throw new Error(err.mensaje || "Error al procesar.");
-                    }
+                    if (!res.ok) throw new Error("Error al procesar reserva.");
                 }
             }
-            showSuccess('Éxito', 'Operación completada.');
-        } catch (e) {
-            showError('Error', e.message);
-        }
+            showSuccess('Éxito', 'Reserva creada correctamente.');
+        } catch (e) { showError('Error', e.message); }
     };
 
+    // Helpers UI
     const showError = (t, d) => setErrorModal({ isOpen: true, titulo: t, descripcion: d });
     const closeError = () => setErrorModal({ ...errorModal, isOpen: false });
     const showSuccess = (t, d) => setSuccessModal({ isOpen: true, titulo: t, descripcion: d });
     const closeSuccess = () => {
         setSuccessModal({ ...successModal, isOpen: false });
-        setStep(2); setSelectedCells([]);
-        setTitular({ tipoDoc: 'DNI', numDoc: '', nombre: '', apellido: '', telefono: '' });
-        setOcupantesPorHab({}); setErrores({}); setAccionTipo('RESERVAR');
-        handleBuscar();
+        setStep(2); setSelectedCells([]); setTitular({ tipoDoc: 'DNI', numDoc: '', nombre: '', apellido: '', telefono: '' });
+        setErrores({}); handleBuscar(); // Recarga la matriz
     };
     const showConfirmAction = (t, d) => setActionModal({ isOpen: true, titulo: t, descripcion: d });
     const closeAction = () => setActionModal({ ...actionModal, isOpen: false });
     const getHabId = (h) => h.idHabitacion || h.id;
-    const habsSeleccionadasUnicas = habitaciones.filter(h => selectedCells.some(s => s.habId === getHabId(h)));
 
     return (
         <ProtectedRoute>
@@ -372,29 +318,23 @@ export default function ReservasPage() {
                                 <div className={styles.topActions}>
                                     <button className={styles.btnVolverOrange} onClick={() => setStep(1)}>VOLVER</button>
 
-                                    {/* BOTÓN OCUPAR */}
-                                    <button className={styles.btnOcuparBlue} onClick={() => handleIniciarProceso('OCUPAR')}>
-                                        OCUPAR ({selectedCells.length})
-                                    </button>
-
-                                    {/* BOTÓN RESERVAR */}
+                                    {/* BOTÓN RESERVAR (Se deshabilita si hay celdas amarillas seleccionadas) */}
                                     <button
                                         className={styles.btnReservarGreen}
                                         onClick={() => handleIniciarProceso('RESERVAR')}
-                                        disabled={hayReservasSeleccionadas}
-                                        style={hayReservasSeleccionadas ? { opacity: 0.5, cursor: 'not-allowed', backgroundColor: '#ccc' } : {}}
-                                        title={hayReservasSeleccionadas ? "No puede reservar habitaciones que ya están reservadas. Use OCUPAR." : "Crear nueva reserva"}
+                                        disabled={hayReservasSeleccionadas || selectedCells.length === 0}
+                                        style={(hayReservasSeleccionadas || selectedCells.length === 0) ? { opacity: 0.5, cursor: 'not-allowed', backgroundColor: '#ccc' } : {}}
                                     >
                                         RESERVAR ({selectedCells.length})
                                     </button>
 
-                                    {/* BOTÓN ELIMINAR RESERVA */}
+                                    {/* BOTÓN ELIMINAR RESERVA (Restaurado: Se habilita si hay celdas amarillas) */}
                                     <button
-                                        className={styles.btnEliminar}
-                                        style={!styles.btnEliminar ? {
+                                        className={styles.btnEliminar || styles.btnRemove} // Asegúrate que 'btnEliminar' exista en tu CSS o usa un estilo inline de fallback
+                                        style={{
                                             backgroundColor: hayReservasSeleccionadas ? '#d32f2f' : '#ccc',
                                             color: 'white', padding: '10px 25px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: hayReservasSeleccionadas ? 'pointer' : 'not-allowed', marginLeft: '10px'
-                                        } : { marginLeft: '10px' }}
+                                        }}
                                         onClick={() => handleIniciarProceso('ELIMINAR')}
                                         disabled={!hayReservasSeleccionadas}
                                         title="Eliminar la reserva seleccionada (Solo para Celdas Amarillas)"
@@ -417,16 +357,12 @@ export default function ReservasPage() {
                                                 {matrixData.map(h => {
                                                     const info = h.estadosPorDia?.find(x => x.fecha === d);
                                                     const estado = info?.estado || 'DISPONIBLE';
-
-                                                    // MODIFICADO: Ya no necesitamos idReserva aquí.
-                                                    // La lógica de borrado se basará en Habitación + Fecha.
                                                     const id = getHabId(h);
                                                     const sel = selectedCells.some(c => c.habId === id && c.fecha === d);
                                                     return (
                                                         <td key={`${id}-${d}`} className={styles.cellCenter}>
                                                             <div
                                                                 className={`${styles.checkboxSquare} ${styles[estado] || styles.DISPONIBLE} ${sel ? styles.selected : ''}`}
-                                                                // Eliminamos el pase de idReserva
                                                                 onClick={() => handleCellClick(id, d, estado, h.tipo, h.numero, h.capacidad)}
                                                             >
                                                                 {sel ? "✓" : estado === 'DISPONIBLE' ? "+" : "x"}
@@ -445,7 +381,7 @@ export default function ReservasPage() {
                         {step === 3 && (
                             <div className="animate-fadeIn">
                                 <h3 style={{ textAlign: 'center', marginBottom:'20px', color: '#444' }}>
-                                    Datos del Cliente ({accionTipo})
+                                    Datos del Cliente (RESERVAR)
                                 </h3>
 
                                 <div className={styles.selectionInfo}>
@@ -466,7 +402,11 @@ export default function ReservasPage() {
                                             <div className={styles.fieldWrapper}>
                                                 <label>Tipo Doc</label>
                                                 <select className={styles.select} value={titular.tipoDoc} onChange={e => handleTitularChange('tipoDoc', e.target.value)}>
-                                                    <option>DNI</option><option>PASAPORTE</option>
+                                                    <option>DNI</option>
+                                                    <option>PASAPORTE</option>
+                                                    <option>LC</option>
+                                                    <option>LE</option>
+                                                    <option>OTRO</option>
                                                 </select>
                                             </div>
                                             <div className={styles.fieldWrapper}>
@@ -493,49 +433,9 @@ export default function ReservasPage() {
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* SECCIÓN OCUPANTES: SOLO VISIBLE SI LA ACCIÓN ES OCUPAR */}
-                                    {accionTipo === 'OCUPAR' && (
-                                        <div style={{marginTop:'30px'}}>
-                                            <h4 style={{color:'#666', borderBottom:'1px solid #ddd', paddingBottom:'5px', marginBottom:'15px'}}>Ocupantes por Habitación</h4>
-                                            {habsSeleccionadasUnicas.map(hab => {
-                                                const hId = getHabId(hab);
-                                                const ocupantes = ocupantesPorHab[hId] || [];
-                                                const lleno = ocupantes.length >= hab.capacidad;
-
-                                                return (
-                                                    <div key={hId} className={styles.habitacionBlock}>
-                                                        <div className={styles.habitacionTitle}>
-                                                            <span>Habitación {hab.numero} ({hab.tipo})</span>
-                                                            <span style={{fontSize:'0.85rem', color: lleno ? '#d32f2f' : '#388e3c'}}>
-                                                                ({ocupantes.length}/{hab.capacidad})
-                                                            </span>
-                                                        </div>
-                                                        {ocupantes.map((ocup, idx) => (
-                                                            <div key={idx} className={styles.ocupanteRow}>
-                                                                <span style={{color:'#999', fontSize:'0.8rem', width:'20px'}}>#{idx+1}</span>
-                                                                <input className={styles.inputSmall} placeholder="Nombre" value={ocup.nombre} onChange={e => handleOcupanteChange(hId, idx, 'nombre', e.target.value)} required />
-                                                                <input className={styles.inputSmall} placeholder="Apellido" value={ocup.apellido} onChange={e => handleOcupanteChange(hId, idx, 'apellido', e.target.value)} required />
-                                                                <input className={styles.inputSmall} placeholder="DNI" value={ocup.dni} onChange={e => handleOcupanteChange(hId, idx, 'dni', e.target.value)} required />
-                                                                <button type="button" className={styles.btnRemove} onClick={() => quitarOcupante(hId, idx)}>✕</button>
-                                                            </div>
-                                                        ))}
-                                                        {!lleno && (
-                                                            <button type="button" className={styles.btnAdd} onClick={() => agregarOcupante(hId, hab.capacidad)}>
-                                                                + Agregar Ocupante
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
-
                                     <div className={styles.footerActions}>
                                         <button type="button" className={styles.btnVolverOrange} onClick={() => setStep(2)}>VOLVER</button>
-                                        <button type="submit" className={accionTipo === 'OCUPAR' ? styles.btnOcuparBlue : styles.btnReservarGreen}>
-                                            CONFIRMAR {accionTipo}
-                                        </button>
+                                        <button type="submit" className={styles.btnReservarGreen}>CONFIRMAR RESERVA</button>
                                     </div>
                                 </form>
                             </div>

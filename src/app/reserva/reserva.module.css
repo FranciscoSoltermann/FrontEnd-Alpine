@@ -163,3 +163,24 @@
     .colNombre, .colDni { width: 100%; max-width: 100%; }
     .btnRemove { width: 100%; margin-top: 5px; }
 }
+/* --- AGREGAR ESTO EN reserva.module.css --- */
+
+.btnEliminar {
+    background-color: #d32f2f; /* Rojo fuerte */
+    color: white;
+    padding: 10px 25px;       /* Mismo padding que Reservar/Ocupar */
+    font-weight: bold;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btnEliminar:hover {
+    background-color: #b71c1c; /* Rojo más oscuro al pasar mouse */
+}
+
+.btnEliminar:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
