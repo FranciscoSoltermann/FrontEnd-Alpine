@@ -1,23 +1,34 @@
+/* src/app/facturacion/nota-credito/notaCredito.module.css */
+
 .container {
-    padding: 2rem;
-    max-width: 1000px;
-    margin: 0 auto;
-    background-color: #f8fafc;
+    /* 1. Esto asegura que el fondo cubra TODA la pantalla */
+    width: 100%;
     min-height: 100vh;
+    background-color: #e6f5e6; /* El verde claro que tienes en tu archivo */
+
+    /* 2. Usamos Flexbox para centrar la tarjeta en el medio */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
 }
 
 .card {
     background: white;
-    padding: 2rem;
+    padding: 1.5rem; /* Padding interno más compacto */
     border-radius: 12px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     margin-bottom: 2rem;
+
+    /* 3. AQUÍ es donde controlamos que el cartel se vea "chico" */
+    width: 100%;
+    max-width: 800px; /* Puedes bajarlo a 700px si lo quieres aún más angosto */
 }
 
 .title {
     color: #1e293b;
-    font-size: 1.8rem;
-    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -32,7 +43,7 @@
 
 .searchInput {
     flex: 1;
-    padding: 0.75rem;
+    padding: 0.6rem;
     border: 1px solid #cbd5e1;
     border-radius: 8px;
     font-size: 1rem;
@@ -53,7 +64,7 @@
 }
 
 .table th, .table td {
-    padding: 1rem;
+    padding: 0.75rem 1rem; /* Un poco menos de padding en celdas */
     border-bottom: 1px solid #e2e8f0;
 }
 
@@ -71,7 +82,7 @@
 
 .summaryBox {
     margin-top: 2rem;
-    padding: 1.5rem;
+    padding: 1rem 1.5rem;
     background-color: #f0f9ff;
     border-radius: 8px;
     border: 1px solid #bae6fd;
@@ -94,7 +105,7 @@
 /* --- Etapa 3: Éxito --- */
 .successContainer {
     text-align: center;
-    padding: 3rem 1rem;
+    padding: 2rem 1rem;
 }
 
 .successIcon {
@@ -108,18 +119,20 @@
     padding: 1.5rem;
     border-radius: 8px;
     text-align: left;
-    display: inline-block;
+    display: inline-block; /* Importante para que no se estire demasiado */
     margin: 2rem 0;
+    width: 100%;
+    max-width: 500px; /* Limita el ancho del detalle interno */
 }
 
 .ncDetails p {
     margin: 0.5rem 0;
-    font-size: 1.1rem;
+    font-size: 1rem;
 }
 
-/* --- Botones Generales --- */
+/* --- Botones --- */
 .buttonPrimary, .buttonSecondary, .buttonDanger {
-    padding: 0.75rem 1.5rem;
+    padding: 0.6rem 1.2rem;
     border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
@@ -128,13 +141,14 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    font-size: 0.95rem;
 }
 
 .buttonPrimary {
-    background-color: #2563eb;
+    background-color: #4dd0e1;
     color: white;
 }
-.buttonPrimary:hover:not(:disabled) { background-color: #1d4ed8; }
+.buttonPrimary:hover:not(:disabled) { background-color: #0a818e; }
 
 .buttonSecondary {
     background-color: #e2e8f0;
@@ -166,4 +180,5 @@ button:disabled {
     padding: 0.75rem;
     border-radius: 6px;
     margin-bottom: 1rem;
+    border: 1px solid #fca5a5;
 }

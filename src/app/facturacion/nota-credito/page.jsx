@@ -5,21 +5,20 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FaSearch, FaArrowLeft, FaCheckCircle, FaFileInvoiceDollar } from 'react-icons/fa';
 import styles from './notaCredito.module.css';
-// Asegúrate de que la ruta de importación sea correcta según tu estructura
 import { buscarFacturasPorCliente, generarNotaCredito } from '@/services/api';
 
 export default function NotaCreditoPage() {
     const router = useRouter();
 
     // Estados de control
-    const [etapa, setEtapa] = useState(1); // 1: Búsqueda, 2: Selección, 3: Éxito
+    const [etapa, setEtapa] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
     // Datos
     const [documentoBusqueda, setDocumentoBusqueda] = useState('');
     const [facturasEncontradas, setFacturasEncontradas] = useState([]);
-    const [facturasSeleccionadas, setFacturasSeleccionadas] = useState([]); // Array de IDs (Long)
+    const [facturasSeleccionadas, setFacturasSeleccionadas] = useState([]);
     const [notaCreditoGenerada, setNotaCreditoGenerada] = useState(null);
 
     // --- Lógica de Formateo ---
@@ -34,20 +33,42 @@ export default function NotaCreditoPage() {
 
     // --- Handlers ---
 
-    // Paso 3 del CU: Buscar facturas
+    // NUEVO: Validación en tiempo real para solo permitir números
+    const handleChangeDocumento = (e) => {
+        const valor = e.target.value;
+
+        // Expresión regular: ^\d*$ significa "solo dígitos del principio al fin"
+        if (/^\d*$/.test(valor)) {
+            setDocumentoBusqueda(valor);
+            setError(''); // Limpiamos el error si es válido
+        } else {
+            // Si intenta escribir una letra, no actualizamos el valor (bloqueamos)
+            // y mostramos el error.
+            setError('Solo se permiten números (DNI o CUIT sin guiones).');
+        }
+    };
+
     const handleBuscar = async (e) => {
         e.preventDefault();
+
+        // Validación extra al enviar
         if (!documentoBusqueda.trim()) {
             setError('Ingrese un DNI o CUIT para buscar.');
             return;
         }
+
+        if (documentoBusqueda.length < 7) {
+            setError('El documento ingresado parece demasiado corto.');
+            return;
+        }
+
         setLoading(true);
         setError('');
         try {
             const data = await buscarFacturasPorCliente(documentoBusqueda.trim());
             setFacturasEncontradas(data);
-            setFacturasSeleccionadas([]); // Reiniciar selección
-            setEtapa(2); // Pasar a la grilla
+            setFacturasSeleccionadas([]);
+            setEtapa(2);
         } catch (err) {
             setError(err.message);
             setFacturasEncontradas([]);
@@ -56,25 +77,20 @@ export default function NotaCreditoPage() {
         }
     };
 
-    // Paso 5 del CU: Selección en grilla
     const toggleSeleccionFactura = (idFactura) => {
         if (facturasSeleccionadas.includes(idFactura)) {
-            // Si ya está, lo sacamos
             setFacturasSeleccionadas(facturasSeleccionadas.filter(id => id !== idFactura));
         } else {
-            // Si no está, lo agregamos
             setFacturasSeleccionadas([...facturasSeleccionadas, idFactura]);
         }
     };
 
-    // Cálculo del total seleccionado
     const calcularTotalSeleccionado = () => {
         return facturasEncontradas
             .filter(f => facturasSeleccionadas.includes(f.id))
             .reduce((acc, curr) => acc + curr.montoTotal, 0);
     };
 
-    // Paso 6 del CU: Generar la Nota
     const handleGenerarNotaCredito = async () => {
         if (facturasSeleccionadas.length === 0) {
             setError('Debe seleccionar al menos una factura para anular.');
@@ -84,10 +100,9 @@ export default function NotaCreditoPage() {
         setLoading(true);
         setError('');
         try {
-            // Llamada al backend
             const nc = await generarNotaCredito(facturasSeleccionadas);
             setNotaCreditoGenerada(nc);
-            setEtapa(3); // Pasar a pantalla de éxito
+            setEtapa(3);
         } catch (err) {
             setError(err.message || 'Error al generar la nota de crédito.');
         } finally {
@@ -104,18 +119,16 @@ export default function NotaCreditoPage() {
         setError('');
     };
 
-
     return (
         <div className={styles.container}>
 
-            {/* --- Encabezado Común --- */}
             <div className={styles.card}>
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                     <h1 className={styles.title}>
                         <FaFileInvoiceDollar /> Generar Nota de Crédito
                     </h1>
                     <Link href="/dashboard" className={styles.buttonSecondary} style={{textDecoration: 'none'}}>
-                        <FaArrowLeft /> Volver al Dashboard
+                        <FaArrowLeft /> Volver al Menu
                     </Link>
                 </div>
                 <p style={{color: '#64748b'}}>Anulación de facturas emitidas mediante Nota de Crédito.</p>
@@ -132,7 +145,8 @@ export default function NotaCreditoPage() {
                                 placeholder="Ej: 20123456789 o 35999888"
                                 className={styles.searchInput}
                                 value={documentoBusqueda}
-                                onChange={(e) => setDocumentoBusqueda(e.target.value)}
+                                onChange={handleChangeDocumento} /* <--- AQUÍ USAMOS LA NUEVA FUNCIÓN */
+                                maxLength={11} /* Opcional: limitar largo máximo de CUIT */
                                 autoFocus
                             />
                             <button type="submit" className={styles.buttonPrimary} disabled={loading}>
@@ -141,7 +155,6 @@ export default function NotaCreditoPage() {
                         </form>
                     </div>
                 )}
-
 
                 {/* ================= ETAPA 2: GRILLA DE SELECCIÓN ================= */}
                 {etapa === 2 && facturasEncontradas.length > 0 && (
@@ -188,7 +201,6 @@ export default function NotaCreditoPage() {
                             </table>
                         </div>
 
-                        {/* Resumen de Selección */}
                         <div className={styles.summaryBox}>
                             <div>
                                 Facturas seleccionadas: <strong>{facturasSeleccionadas.length}</strong>
@@ -201,14 +213,14 @@ export default function NotaCreditoPage() {
 
                         <div className={styles.actions}>
                             <button className={styles.buttonSecondary} onClick={() => setEtapa(1)} disabled={loading}>
-                                Atrás / Otra Búsqueda
+                                Atrás
                             </button>
                             <button
                                 className={styles.buttonDanger}
                                 onClick={handleGenerarNotaCredito}
                                 disabled={loading || facturasSeleccionadas.length === 0}
                             >
-                                {loading ? 'Procesando...' : 'ACEPTAR Y GENERAR NOTA DE CRÉDITO'}
+                                {loading ? 'Procesando...' : 'GENERAR NOTA DE CRÉDITO'}
                             </button>
                         </div>
                     </div>
@@ -228,7 +240,6 @@ export default function NotaCreditoPage() {
                         </h3>
                         <p><strong>N° Nota de Crédito:</strong> {String(notaCreditoGenerada.id).padStart(8, '0')}</p>
                         <p><strong>Fecha Emisión:</strong> {formatDate(notaCreditoGenerada.fechaEmision)}</p>
-                        {/* Asumimos que la NC hereda el tipo de la primera factura anulada si son del mismo tipo, o se define por back */}
                         <p><strong>Facturas Anuladas:</strong> {notaCreditoGenerada.facturasCanceladas?.length}</p>
                         <div style={{marginTop: '1.5rem', borderTop: '1px solid #cbd5e1', paddingTop: '1rem', textAlign: 'right'}}>
                             <span style={{fontSize: '1.2rem'}}>Total Nota de Crédito:</span><br/>

@@ -1,0 +1,146 @@
+/* src/app/pagos/pagos.module.css */
+
+/* 1. CONTENEDOR PRINCIPAL (Fondo Verde) */
+.container {
+    width: 100%;
+    min-height: 100vh;
+    background-color: #e6f5e6; /* Verde suave del dashboard */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+}
+
+/* 2. TARJETA BLANCA CENTRAL */
+.card {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 900px; /* Un poco más ancho para que entren bien los datos de pago */
+    margin-bottom: 2rem;
+    animation: slideUp 0.3s ease-out;
+}
+
+/* 3. TÍTULO */
+.title {
+    color: #1e293b;
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+    text-align: center;
+    border-bottom: 2px solid #f1f5f9;
+    padding-bottom: 1rem;
+}
+
+/* 4. CAMPOS DE FORMULARIO (Inputs y Labels) */
+.fieldWrapper {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1rem;
+}
+
+.label {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.inputField {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 1rem;
+    background-color: #fff;
+    transition: all 0.2s;
+}
+
+.inputField:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* 5. BOTONES */
+.buttonContainer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2rem;
+    gap: 1rem;
+}
+
+.button {
+    padding: 0.8rem 1.5rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: transform 0.1s, opacity 0.2s;
+}
+
+.button:active {
+    transform: scale(0.98);
+}
+
+.button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Botón de Confirmar (Verde) */
+.submitButton {
+    background-color: #90ee90; /* Verde fuerte */
+    color: black;
+}
+.submitButton:hover:not(:disabled) {
+    background-color: #60cf60;
+}
+
+/* Botón de Volver/Cancelar (Gris/Rojo suave) */
+.cancelButton {
+    background-color: #e2e8f0;
+    color: #475569;
+}
+.cancelButton:hover {
+    background-color: #cbd5e1;
+    color: #1e293b;
+}
+
+/* 6. ANIMACIONES */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* RESPONSIVE */
+@media (max-width: 600px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .card {
+        padding: 1.5rem;
+    }
+
+    .buttonContainer {
+        flex-direction: column-reverse;
+    }
+
+    .button {
+        width: 100%;
+    }
+}
