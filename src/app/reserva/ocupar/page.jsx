@@ -63,32 +63,29 @@ export default function OcuparPage() {
 
     // ESTADOS DE OCUPANTES Y ERRORES
     const [ocupantesPorHab, setOcupantesPorHab] = useState({});
-    const [ocupantesErrores, setOcupantesErrores] = useState({}); // Nuevo estado para errores de ocupantes
-    const [errores, setErrores] = useState({}); // Errores del titular
+    const [ocupantesErrores, setOcupantesErrores] = useState({});
+    const [errores, setErrores] = useState({});
 
     // --- VALIDACIONES INPUTS TITULAR ---
     const validarInput = (campo, valor) => {
         let msg = "";
-        // Validación DNI Titular: 7 u 8 dígitos
         if (campo === 'numDoc' && valor && !/^[0-9]{7,8}$/.test(valor)) msg = "El DNI debe tener 7 u 8 números.";
         if ((campo === 'nombre' || campo === 'apellido') && valor && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(valor)) msg = "Solo se permiten letras.";
         if (campo === 'telefono' && valor && !/^[0-9]+$/.test(valor)) msg = "Solo se permiten números.";
         setErrores(prev => ({ ...prev, [campo]: msg }));
     };
 
-    // --- VALIDACIONES OCUPANTES (CORREGIDO: RANGO DNI) ---
+    // --- VALIDACIONES OCUPANTES ---
     const validarDatoOcupante = (campo, valor) => {
         if (!valor || valor.trim() === '') return "Requerido";
-
         if (campo === 'dni') {
-            // CORRECCIÓN: Regex estricto para 7 u 8 dígitos numéricos
             if (!/^[0-9]{7,8}$/.test(valor)) return "Debe tener 7 u 8 números";
         }
         else if (campo === 'nombre' || campo === 'apellido') {
             if (valor.length < 2 || valor.length > 50) return "Entre 2 y 50 letras";
             if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(valor)) return "Solo letras";
         }
-        return ""; // Sin error
+        return "";
     };
 
     const handleTitularChange = (campo, valor) => {
@@ -129,7 +126,6 @@ export default function OcuparPage() {
             if (lista.length >= capacidadMax) return prev;
             return { ...prev, [habId]: [...lista, { nombre: '', apellido: '', dni: '' }] };
         });
-        // Sincronizamos el array de errores
         setOcupantesErrores(prev => {
             const lista = prev[habId] || [];
             return { ...prev, [habId]: [...lista, { nombre: '', apellido: '', dni: '' }] };
@@ -142,7 +138,6 @@ export default function OcuparPage() {
             lista.splice(index, 1);
             return { ...prev, [habId]: lista };
         });
-        // Quitamos el error correspondiente
         setOcupantesErrores(prev => {
             const lista = [...(prev[habId] || [])];
             lista.splice(index, 1);
@@ -151,18 +146,15 @@ export default function OcuparPage() {
     };
 
     const handleOcupanteChange = (habId, index, campo, valor) => {
-        // 1. Actualizar valor
         setOcupantesPorHab(prev => {
             const lista = [...(prev[habId] || [])];
             lista[index] = { ...lista[index], [campo]: valor };
             return { ...prev, [habId]: lista };
         });
-
-        // 2. Validar en tiempo real y actualizar error
         const errorMsg = validarDatoOcupante(campo, valor);
         setOcupantesErrores(prev => {
             const lista = [...(prev[habId] || [])];
-            if (!lista[index]) lista[index] = { nombre: '', apellido: '', dni: '' }; // safety check
+            if (!lista[index]) lista[index] = { nombre: '', apellido: '', dni: '' };
             lista[index] = { ...lista[index], [campo]: errorMsg };
             return { ...prev, [habId]: lista };
         });
@@ -212,7 +204,6 @@ export default function OcuparPage() {
     const handleContinuar = () => {
         if (selectedCells.length === 0) return showError('Error', "Seleccione una celda.");
 
-        // Inicializamos arrays para ocupantes y errores
         const habsUnicas = [...new Set(selectedCells.map(s => s.habId))];
         const mapInit = { ...ocupantesPorHab };
         const errInit = { ...ocupantesErrores };
@@ -229,12 +220,9 @@ export default function OcuparPage() {
 
     const onFormSubmit = (e) => {
         e.preventDefault();
-
-        // 1. Validar Titular
         if (Object.values(errores).some(m => m)) return showError("Error", "Corrija los campos del titular.");
         if (!titular.numDoc || !titular.nombre) return showError("Faltan datos", "Complete los datos del titular.");
 
-        // 2. VALIDACIÓN MASIVA DE OCUPANTES ANTES DE ENVIAR
         let hayErroresOcupantes = false;
         const nuevosErrores = { ...ocupantesErrores };
         const habsSeleccionadasUnicas = habitaciones.filter(h => selectedCells.some(s => s.habId === getHabId(h)));
@@ -366,6 +354,16 @@ export default function OcuparPage() {
                                     <input type="date" className={styles.input} value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} min={fechaDesde || todayString} />
                                 </div>
                                 <button className={styles.btnBuscar} onClick={handleBuscar} disabled={loading}>{loading ? "..." : "BUSCAR"}</button>
+
+                                {/* --- BOTÓN AGREGADO EN PASO 1 --- */}
+                                <button
+                                    className={styles.btnVolverOrange}
+                                    onClick={() => router.push('/dashboard')}
+                                    style={{ marginLeft: '10px' }}
+                                >
+                                    VOLVER AL MENÚ
+                                </button>
+                                {/* ------------------------------- */}
                             </div>
                         )}
 
@@ -373,6 +371,17 @@ export default function OcuparPage() {
                             <>
                                 <div className={styles.topActions}>
                                     <button className={styles.btnVolverOrange} onClick={() => setStep(1)}>VOLVER</button>
+
+                                    {/* --- BOTÓN AGREGADO EN PASO 2 --- */}
+                                    <button
+                                        className={styles.btnVolverOrange}
+                                        onClick={() => router.push('/dashboard')}
+                                        style={{ marginLeft: '10px', marginRight: 'auto' }}
+                                    >
+                                        VOLVER AL MENÚ
+                                    </button>
+                                    {/* ------------------------------- */}
+
                                     <button className={styles.btnOcuparBlue} onClick={handleContinuar}>
                                         OCUPAR ({selectedCells.length})
                                     </button>
@@ -413,12 +422,13 @@ export default function OcuparPage() {
                             </>
                         )}
 
+                        {/* EL PASO 3 (Formulario) se mantiene igual */}
                         {step === 3 && (
                             <div className="animate-fadeIn">
                                 <h3 style={{ textAlign: 'center', marginBottom:'20px', color: '#444' }}>
                                     Datos del Cliente (OCUPAR)
                                 </h3>
-
+                                {/* ... Resto del formulario ... */}
                                 <div className={styles.selectionInfo}>
                                     <p style={{margin:0, fontWeight:'bold', color: '#2196f3'}}>Resumen de selección:</p>
                                     <ul style={{ listStyle: 'none', padding: 0, margin:'10px 0 0 0' }}>

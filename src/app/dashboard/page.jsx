@@ -63,7 +63,7 @@ export default function DashboardPage() {
                                 <h3>Ocupar Habitación</h3>
                                 <p>Registrar ingreso inmediato (Check-in).</p>
                             </Link>
-                            <Link href="/estado-habitaciones" className={styles.card}>
+                            <Link href="/reserva/mostrar" className={styles.card}>
                                 <div className={styles.iconWrapper}><FaBed size={32}/></div>
                                 <h3>Estado Habitaciones</h3>
                                 <p>Ver mapa de ocupación y limpieza.</p>

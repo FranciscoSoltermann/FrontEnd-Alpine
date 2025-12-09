@@ -33,17 +33,13 @@ export default function NotaCreditoPage() {
 
     // --- Handlers ---
 
-    // NUEVO: Validación en tiempo real para solo permitir números
+    // Validación en tiempo real para solo permitir números
     const handleChangeDocumento = (e) => {
         const valor = e.target.value;
-
-        // Expresión regular: ^\d*$ significa "solo dígitos del principio al fin"
         if (/^\d*$/.test(valor)) {
             setDocumentoBusqueda(valor);
-            setError(''); // Limpiamos el error si es válido
+            setError('');
         } else {
-            // Si intenta escribir una letra, no actualizamos el valor (bloqueamos)
-            // y mostramos el error.
             setError('Solo se permiten números (DNI o CUIT sin guiones).');
         }
     };
@@ -51,7 +47,6 @@ export default function NotaCreditoPage() {
     const handleBuscar = async (e) => {
         e.preventDefault();
 
-        // Validación extra al enviar
         if (!documentoBusqueda.trim()) {
             setError('Ingrese un DNI o CUIT para buscar.');
             return;
@@ -127,7 +122,8 @@ export default function NotaCreditoPage() {
                     <h1 className={styles.title}>
                         <FaFileInvoiceDollar /> Generar Nota de Crédito
                     </h1>
-                    <Link href="/dashboard" className={styles.buttonSecondary} style={{textDecoration: 'none'}}>
+                    {/* CAMBIO AQUÍ: Se usa styles.buttonOrange */}
+                    <Link href="/dashboard" className={styles.buttonOrange}>
                         <FaArrowLeft /> Volver al Menu
                     </Link>
                 </div>
@@ -145,8 +141,8 @@ export default function NotaCreditoPage() {
                                 placeholder="Ej: 20123456789 o 35999888"
                                 className={styles.searchInput}
                                 value={documentoBusqueda}
-                                onChange={handleChangeDocumento} /* <--- AQUÍ USAMOS LA NUEVA FUNCIÓN */
-                                maxLength={11} /* Opcional: limitar largo máximo de CUIT */
+                                onChange={handleChangeDocumento}
+                                maxLength={11}
                                 autoFocus
                             />
                             <button type="submit" className={styles.buttonPrimary} disabled={loading}>
@@ -212,6 +208,7 @@ export default function NotaCreditoPage() {
                         </div>
 
                         <div className={styles.actions}>
+                            {/* Este botón se mantiene gris (Secondary) */}
                             <button className={styles.buttonSecondary} onClick={() => setEtapa(1)} disabled={loading}>
                                 Atrás
                             </button>
@@ -250,6 +247,7 @@ export default function NotaCreditoPage() {
                     </div>
 
                     <div className={styles.actions} style={{justifyContent: 'center'}}>
+                        {/* Este botón se mantiene gris (Secondary) */}
                         <button className={styles.buttonSecondary} onClick={() => window.print()}>
                             <FaFileInvoiceDollar /> Imprimir Comprobante
                         </button>

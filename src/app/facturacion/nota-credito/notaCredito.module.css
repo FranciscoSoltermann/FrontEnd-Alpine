@@ -131,7 +131,7 @@
 }
 
 /* --- Botones --- */
-.buttonPrimary, .buttonSecondary, .buttonDanger {
+.buttonPrimary, .buttonSecondary, .buttonDanger, .buttonOrange {
     padding: 0.6rem 1.2rem;
     border-radius: 8px;
     font-weight: 600;
@@ -142,13 +142,14 @@
     align-items: center;
     gap: 0.5rem;
     font-size: 0.95rem;
+    text-decoration: none; /* Asegura que los links no tengan subrayado */
 }
 
 .buttonPrimary {
-    background-color: #4dd0e1;
+    background-color: #2563eb;
     color: white;
 }
-.buttonPrimary:hover:not(:disabled) { background-color: #0a818e; }
+.buttonPrimary:hover:not(:disabled) { background-color: #1d4ed8; }
 
 .buttonSecondary {
     background-color: #e2e8f0;
@@ -161,6 +162,13 @@
     color: white;
 }
 .buttonDanger:hover:not(:disabled) { background-color: #b91c1c; }
+
+.buttonOrange {
+    background-color: #f59e0b; /* Naranja/Ámbar */
+    color: white;
+}
+.buttonOrange:hover:not(:disabled) { background-color: #d97706; }
+
 
 button:disabled {
     opacity: 0.6;

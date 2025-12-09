@@ -292,11 +292,9 @@ export default function NuevaReservaPage() {
                                     <label>Hasta Fecha</label>
                                     <input type="date" className={styles.input} value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} min={fechaDesde || todayString} />
                                 </div>
-
-                                {/* BOTÓN BUSCAR */}
                                 <button className={styles.btnBuscar} onClick={handleBuscar} disabled={loading}>{loading ? "..." : "BUSCAR"}</button>
 
-                                {/* --- AQUÍ ESTÁ EL BOTÓN DE VOLVER QUE PEDISTE --- */}
+                                {/* --- BOTÓN AGREGADO EN PASO 1 --- */}
                                 <button
                                     className={styles.btnVolverOrange}
                                     onClick={() => router.push('/dashboard')}
@@ -304,7 +302,7 @@ export default function NuevaReservaPage() {
                                 >
                                     VOLVER AL MENÚ
                                 </button>
-                                {/* ------------------------------------------------ */}
+                                {/* ------------------------------- */}
                             </div>
                         )}
 
@@ -313,7 +311,7 @@ export default function NuevaReservaPage() {
                                 <div className={styles.topActions}>
                                     <button className={styles.btnVolverOrange} onClick={() => setStep(1)}>ATRÁS</button>
 
-                                    {/* TAMBIÉN EN EL PASO 2 */}
+                                    {/* --- BOTÓN AGREGADO EN PASO 2 --- */}
                                     <button
                                         className={styles.btnVolverOrange}
                                         onClick={() => router.push('/dashboard')}
@@ -321,6 +319,7 @@ export default function NuevaReservaPage() {
                                     >
                                         VOLVER AL MENÚ
                                     </button>
+                                    {/* ------------------------------- */}
 
                                     <button
                                         className={styles.btnReservarGreen}
@@ -345,7 +344,6 @@ export default function NuevaReservaPage() {
                                     </button>
                                 </div>
                                 <div className={styles.tableWrapper}>
-                                    {/* ...Tabla... */}
                                     <table className={styles.matrixTable}>
                                         <thead>
                                         <tr>
@@ -383,7 +381,6 @@ export default function NuevaReservaPage() {
 
                         {step === 3 && (
                             <div className="animate-fadeIn">
-                                {/* ... Formulario paso 3 sin cambios ... */}
                                 <h3 style={{ textAlign: 'center', marginBottom:'20px', color: '#444' }}>
                                     Datos del Cliente (RESERVAR)
                                 </h3>
